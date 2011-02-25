@@ -8,7 +8,8 @@ for the Erlang pid identifier, the 48 bits from the MAC address are
 bitwise-XORed (i.e., 3 OCI (Organizationally Unique Identifier)
 bytes and 3 NIC (Network Interface Controller) specific bytes) down to
 16 bits. The Erlang pid is bitwise-XORed from 72 bits down to 32 bits.
-The version 4 (random) identifier is provided as specified within the RFC.
+The version 3 (MD5), version 4 (random), and version 5 (SHA)
+methods are provided as specified within the RFC.
 
 Author
 ------
