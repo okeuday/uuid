@@ -53,7 +53,7 @@
 %%%
 %%% @author Michael Truog <mjtruog [at] gmail (dot) com>
 %%% @copyright 2011 Michael Truog
-%%% @version 0.1.0 {@date} {@time}
+%%% @version 0.1.2 {@date} {@time}
 %%%------------------------------------------------------------------------
 
 -module(uuid).
@@ -62,6 +62,7 @@
 %% external interface
 -export([new/1,
          get_v1/1,
+         get_v1_time/1,
          get_v3/1,
          get_v4/0,
          get_v5/1,
@@ -127,6 +128,22 @@ get_v1(#uuid_state{node_id = NodeId,
       0:1, 1:1,            % reserved bits
       ClockSeqLow:8,
       NodeId/binary>>.
+
+get_v1_time(#uuid_state{epoch_seconds = Epoch}) ->
+    Now = {_, _, Micro} = erlang:now(),
+    NowUTC = calendar:now_to_universal_time(Now),
+    NowSecs = calendar:datetime_to_gregorian_seconds(NowUTC),
+    (NowSecs - Epoch) * 1000000 + Micro;
+
+get_v1_time(Value)
+    when is_binary(Value), byte_size(Value) == 16 ->
+    <<TimeLow:32, TimeMid:16, TimeHigh:12,
+      0:1, 0:1, 0:1, 1:1,  % version 1 bits
+      _:6,
+      0:1, 1:1,            % reserved bits
+      _:8, _:48>> = Value,
+    <<Time:60>> = <<TimeHigh:12/little, TimeMid:16/little, TimeLow:32/little>>,
+    Time. % microseconds since epoch
 
 get_v3([I | _] = Name)
     when is_integer(I) ->
