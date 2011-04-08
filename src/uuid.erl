@@ -160,6 +160,10 @@ get_v3([I | _] = Name)
 get_v4() ->
     get_v4_safe().
 
+% random:uniform/1 repeats every 2.78e13
+% (see B.A. Wichmann and I.D.Hill, in 
+%  'An efficient and portable pseudo-random number generator',
+%  Journal of Applied Statistics. AS183. 1982, or Byte March 1987)
 get_v4_fast() ->
     Rand1 = random:uniform(1073741824) - 1, % random 30 bits
     Rand2 = random:uniform(1073741824) - 1, % random 30 bits
@@ -172,6 +176,16 @@ get_v4_fast() ->
       0:1, 1:1,            % reserved bits
       Rand3Part2:24, Rand4:32>>.
 
+% crypto:rand_bytes/1 repeats in the same way as
+% RAND_pseudo_bytes within OpenSSL.
+% if OpenSSL is configured to use the MD PRNG (default) with SHA1
+% (in openssl/crypto/rand/md_rand.c),
+% the collisions are between 2^80 and 2^51
+% (http://eprint.iacr.org/2008/469.pdf).  So, that means this would
+% repeat ideally every 1.21e24 and at worst every 2.25e15.
+% if OpenSSL was compiled in FIPS mode, it uses ANSI X9.31 RNG
+% and would have collisions based on 3DES (which is a black-box algorithm,
+% i.e., the DES S-boxes used within the cipher were never published).
 get_v4_safe() ->
     <<Rand1:60, _:4, Rand2:6, _:2, Rand3:56>> = crypto:rand_bytes(16),
     <<Rand1:60,
