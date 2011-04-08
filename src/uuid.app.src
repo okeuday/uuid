@@ -2,6 +2,6 @@
   [{description, "Native UUID Generation"},
    {vsn, "0.1.0"},
    {modules, [uuid]},
-   {applications, [stdlib]},
+   {applications, [crypto, stdlib]},
    {start_phases, []}]}.
 
