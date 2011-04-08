@@ -65,6 +65,7 @@
          get_v1_time/1,
          get_v3/1,
          get_v4/0,
+         get_v4_safe/0,
          get_v5/1,
          uuid_to_string/1,
          increment/1]).
@@ -166,6 +167,12 @@ get_v4() ->
       Rand3Part1:6,
       0:1, 1:1,            % reserved bits
       Rand3Part2:24, Rand4:32>>.
+
+get_v4_safe() ->
+    % Version = <<4:4/big>>,  bits 12-15 of time_hi_and_v (60-63)
+    % Variant = <<2:2/big>>,  6-7 of clock_seq_hi (70-71)
+    <<Start:60, _Version:4, Mid:6, _Variant:2, End:56>> = crypto:rand_bytes(16),
+    <<Start:60, 4:4, Mid:6, 2:2, End:56>>.
 
 get_v5([I | _] = Name)
     when is_integer(I) ->
