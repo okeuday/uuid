@@ -215,7 +215,7 @@ get_v4() ->
 % (see B.A. Wichmann and I.D.Hill, in 
 %  'An efficient and portable pseudo-random number generator',
 %  Journal of Applied Statistics. AS183. 1982, or Byte March 1987)
-% a single random:uniform/1 call can provide a maximum of 44 bits
+% a single random:uniform/1 call can provide a maximum of 45 bits
 % (currently this is not significantly faster
 %  because multiple function calls are necessary)
 
