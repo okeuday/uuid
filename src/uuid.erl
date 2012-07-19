@@ -55,7 +55,7 @@
 %%%
 %%% @author Michael Truog <mjtruog [at] gmail (dot) com>
 %%% @copyright 2011-2012 Michael Truog
-%%% @version 0.2.0 {@date} {@time}
+%%% @version 1.0.0 {@date} {@time}
 %%%------------------------------------------------------------------------
 
 -module(uuid).

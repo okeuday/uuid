@@ -1,6 +1,6 @@
 {application, uuid,
   [{description, "Native UUID Generation"},
-   {vsn, "0.1.4"},
+   {vsn, "1.0.0"},
    {modules, [uuid]},
    {registered, []},
    {applications, [crypto, stdlib]},
