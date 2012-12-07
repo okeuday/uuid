@@ -180,12 +180,16 @@ get_v1(#uuid_state{node_id = NodeId,
         TimestampType =:= os ->
             os:timestamp()
     end,
-    Time = (MegaSeconds * 1000000 + Seconds) * 1000000 + MicroSeconds,
-    <<TimeHigh:12/little, TimeMid:16/little, TimeLow:32/little>> = <<Time:60>>,
-    <<TimeLow:32, TimeMid:16, TimeHigh:12,
+    % 16#01b21dd213814000 is the number of 100-ns intervals between the
+    % UUID epoch 1582-10-15 00:00:00 and the Unix epoch 1970-01-01 00:00:00.
+    Time = ((MegaSeconds * 1000000 + Seconds) * 1000000 + MicroSeconds) * 10 +
+           16#01b21dd213814000,
+    <<TimeHigh:12, TimeMid:16, TimeLow:32>> = <<Time:60>>,
+    <<TimeLow:32, TimeMid:16,
       0:1, 0:1, 0:1, 1:1,  % version 1 bits
+      TimeHigh:12,
       ClockSeqHigh:6,
-      0:1, 1:1,            % reserved bits
+      1:1, 0:1,            % RFC 4122 variant bits
       ClockSeqLow:8,
       NodeId/binary>>.
 
@@ -226,13 +230,14 @@ get_v1_time(#uuid_state{timestamp_type = TimestampType}) ->
 
 get_v1_time(Value)
     when is_binary(Value), byte_size(Value) == 16 ->
-    <<TimeLow:32, TimeMid:16, TimeHigh:12,
+    <<TimeLow:32, TimeMid:16,
       0:1, 0:1, 0:1, 1:1,  % version 1 bits
+      TimeHigh:12,
       _:6,
-      0:1, 1:1,            % reserved bits
+      1:1, 0:1,            % RFC 4122 variant bits
       _:8, _:48>> = Value,
-    <<Time:60>> = <<TimeHigh:12/little, TimeMid:16/little, TimeLow:32/little>>,
-    Time. % microseconds since epoch
+    <<Time:60>> = <<TimeHigh:12, TimeMid:16, TimeLow:32>>,
+    erlang:trunc((Time - 16#01b21dd213814000) / 10). % microseconds since epoch
 
 %%-------------------------------------------------------------------------
 %% @doc
@@ -241,12 +246,12 @@ get_v1_time(Value)
 %%-------------------------------------------------------------------------
 
 get_v3(Name) ->
-    <<B1:60, B2a:6, B2b:6, B3:56>> = crypto:md5(Name),
+    <<B1:48, B2a:18, B2b:6, B3:56>> = crypto:md5(Name),
     B2 = B2a bxor B2b,
-    <<B1:60,
+    <<B1:48,
       0:1, 0:1, 1:1, 1:1,  % version 3 bits
-      B2:6,
-      0:1, 1:1,            % reserved bits
+      B2:18,
+      1:1, 0:1,            % RFC 4122 variant bits
       B3:56>>.
 
 %%-------------------------------------------------------------------------
@@ -281,11 +286,11 @@ get_v3(Namespace, Name) when is_binary(Namespace) ->
 %%-------------------------------------------------------------------------
 
 get_v4() ->
-    <<Rand1:60, _:4, Rand2:6, _:2, Rand3:56>> = crypto:rand_bytes(16),
-    <<Rand1:60,
+    <<Rand1:48, _:4, Rand2:18, _:2, Rand3:56>> = crypto:rand_bytes(16),
+    <<Rand1:48,
       0:1, 1:1, 0:1, 0:1,  % version 4 bits
-      Rand2:6,
-      0:1, 1:1,            % reserved bits
+      Rand2:18,
+      1:1, 0:1,            % RFC 4122 variant bits
       Rand3:56>>.
 
 %%-------------------------------------------------------------------------
@@ -305,11 +310,11 @@ get_v4_urandom_bigint() ->
     Rand1 = random:uniform(2199023255552) - 1, % random 41 bits
     Rand2 = random:uniform(2199023255552) - 1, % random 41 bits
     Rand3 = random:uniform(1099511627776) - 1, % random 40 bits
-    <<Rand2a:19, Rand2b:6, Rand2c:16>> = <<Rand2:41>>,
-    <<Rand1:41, Rand2a:19,
+    <<Rand2a:7, Rand2b:18, Rand2c:16>> = <<Rand2:41>>,
+    <<Rand1:41, Rand2a:7,
       0:1, 1:1, 0:1, 0:1, % version 4 bits
-      Rand2b:6,
-      0:1, 1:1, % reserved bits
+      Rand2b:18,
+      1:1, 0:1,            % RFC 4122 variant bits
       Rand2c:16, Rand3:40>>.
 
 %%-------------------------------------------------------------------------
@@ -321,17 +326,17 @@ get_v4_urandom_bigint() ->
 %%-------------------------------------------------------------------------
 
 get_v4_urandom_native() ->
-    Rand1 = random:uniform(134217727) - 1, % random 27 bits
-    Rand2 = random:uniform(134217727) - 1, % random 27 bits
-    Rand3 = random:uniform(16383) - 1, % random 14 bits
-    Rand4 = random:uniform(134217727) - 1, % random 27 bits
-    Rand5 = random:uniform(134217727) - 1, % random 27 bits
-    <<Rand3a:2, Rand3b:6, Rand3c:6>> = <<Rand3:14>>,
-    <<Rand1:27, Rand2:27, Rand3a:2, 
-      0:1, 1:1, 0:1, 0:1, % version 4 bits
-      Rand3b:6,
-      0:1, 1:1, % reserved bits
-      Rand3c:6, Rand4:27, Rand5:27>>.
+    Rand1 = random:uniform(134217728) - 1, % random 27 bits
+    Rand2 = random:uniform(2097152) - 1,   % random 21 bits
+    Rand3 = random:uniform(16777216) - 1,  % random 24 bits
+    Rand4 = random:uniform(134217728) - 1, % random 27 bits
+    Rand5 = random:uniform(134217728) - 1, % random 27 bits
+    <<Rand3a:18, Rand3b:6>> = <<Rand3:24>>,
+    <<Rand1:27, Rand2:21,
+      0:1, 1:1, 0:1, 0:1,  % version 4 bits
+      Rand3a:18, 
+      1:1, 0:1,            % RFC 4122 variant bits
+      Rand3b:6, Rand4:27, Rand5:27>>.
 
 %%-------------------------------------------------------------------------
 %% @doc
@@ -340,12 +345,12 @@ get_v4_urandom_native() ->
 %%-------------------------------------------------------------------------
 
 get_v5(Name) ->
-    <<B1:60, B2:6, B3a:56, B3b:38>> = crypto:sha(Name),
+    <<B1:48, B2:18, B3a:56, B3b:38>> = crypto:sha(Name),
     B3 = B3a bxor B3b,
-    <<B1:60,
+    <<B1:48,
       0:1, 1:1, 0:1, 1:1,  % version 5 bits
-      B2:6,
-      0:1, 1:1,            % reserved bits
+      B2:18,
+      1:1, 0:1,            % RFC 4122 variant bits
       B3:56>>.
 
 %%-------------------------------------------------------------------------
