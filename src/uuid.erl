@@ -101,6 +101,9 @@
 %% @end
 %%-------------------------------------------------------------------------
 
+-spec new(Pid :: pid()) ->
+    #uuid_state{}.
+
 new(Pid) when is_pid(Pid) ->
     new(Pid, erlang).
 
@@ -113,6 +116,9 @@ new(Pid) when is_pid(Pid) ->
 %% system clock quickly without modifying the result.
 %% @end
 %%-------------------------------------------------------------------------
+
+-spec new(Pid :: pid(), TimestampType :: 'os' | 'erlang') ->
+    #uuid_state{}.
 
 new(Pid, TimestampType)
     when is_pid(Pid), TimestampType =:= erlang;
@@ -174,6 +180,9 @@ new(Pid, TimestampType)
 %% @end
 %%-------------------------------------------------------------------------
 
+-spec get_v1(#uuid_state{}) ->
+    <<_:128>>.
+
 get_v1(#uuid_state{node_id = NodeId,
                    clock_seq_high = ClockSeqHigh,
                    clock_seq_low = ClockSeqLow,
@@ -204,6 +213,9 @@ get_v1(#uuid_state{node_id = NodeId,
 %% @end
 %%-------------------------------------------------------------------------
 
+-spec get_v1_time() ->
+    non_neg_integer().
+
 get_v1_time() ->
     get_v1_time(erlang).
 
@@ -213,6 +225,9 @@ get_v1_time() ->
 %% The result is an integer in microseconds.
 %% @end
 %%-------------------------------------------------------------------------
+
+-spec get_v1_time('os' | 'erlang' | #uuid_state{} | <<_:128>>) ->
+    non_neg_integer().
 
 get_v1_time(erlang) ->
     {MegaSeconds, Seconds, MicroSeconds} = erlang:now(),
@@ -249,6 +264,9 @@ get_v1_time(Value)
 %% @end
 %%-------------------------------------------------------------------------
 
+-spec get_v3(Name :: binary()) ->
+    <<_:128>>.
+
 get_v3(Name) ->
     <<B1:48, B2a:18, B2b:6, B3:56>> = crypto:md5(Name),
     B2 = B2a bxor B2b,
@@ -263,6 +281,9 @@ get_v3(Name) ->
 %% ===Get a v3 UUID in a particular namespace.===
 %% @end
 %%-------------------------------------------------------------------------
+
+-spec get_v3(Namespace :: binary(), Name :: binary()) ->
+    <<_:128>>.
 
 get_v3(Namespace, Name) when is_binary(Namespace) ->
     NameBin = if
@@ -291,8 +312,14 @@ get_v3(Namespace, Name) when is_binary(Namespace) ->
 %% @end
 %%-------------------------------------------------------------------------
 
+-spec get_v4() ->
+    <<_:128>>.
+
 get_v4() ->
     get_v4(strong).
+
+-spec get_v4('strong' | 'weak') ->
+    <<_:128>>.
 
 get_v4(strong) ->
     <<Rand1:48, _:4, Rand2:18, _:2, Rand3:56>> = crypto:strong_rand_bytes(16),
@@ -323,6 +350,9 @@ get_v4(weak) ->
 %% @end
 %%-------------------------------------------------------------------------
 
+-spec get_v4_urandom_bigint() ->
+    <<_:128>>.
+
 get_v4_urandom_bigint() ->
     Rand1 = random:uniform(2199023255552) - 1, % random 41 bits
     Rand2 = random:uniform(2199023255552) - 1, % random 41 bits
@@ -342,24 +372,30 @@ get_v4_urandom_bigint() ->
 %% @end
 %%-------------------------------------------------------------------------
 
+-spec get_v4_urandom_native() ->
+    <<_:128>>.
+
 get_v4_urandom_native() ->
     Rand1 = random:uniform(134217728) - 1, % random 27 bits
     Rand2 = random:uniform(2097152) - 1,   % random 21 bits
-    Rand3 = random:uniform(16777216) - 1,  % random 24 bits
+    Rand3 = random:uniform(1048576) - 1,   % random 20 bits
     Rand4 = random:uniform(134217728) - 1, % random 27 bits
     Rand5 = random:uniform(134217728) - 1, % random 27 bits
-    <<Rand3a:18, Rand3b:6>> = <<Rand3:24>>,
+    <<Rand3a:18, Rand3b:2>> = <<Rand3:20>>,
     <<Rand1:27, Rand2:21,
       0:1, 1:1, 0:1, 0:1,  % version 4 bits
       Rand3a:18, 
       1:1, 0:1,            % RFC 4122 variant bits
-      Rand3b:6, Rand4:27, Rand5:27>>.
+      Rand3b:2, Rand4:27, Rand5:27>>.
 
 %%-------------------------------------------------------------------------
 %% @doc
 %% ===Get a v5 UUID.===
 %% @end
 %%-------------------------------------------------------------------------
+
+-spec get_v5(Name :: binary()) ->
+    <<_:128>>.
 
 get_v5(Name) ->
     <<B1:48, B2:18, B3a:38, B3b:56>> = crypto:sha(Name),
@@ -376,6 +412,9 @@ get_v5(Name) ->
 %% @end
 %%-------------------------------------------------------------------------
 
+-spec get_v5(Namespace :: binary(), Name :: binary()) ->
+    <<_:128>>.
+
 get_v5(Namespace, Name) when is_binary(Namespace) ->
     NameBin = if
         is_binary(Name) ->
@@ -390,6 +429,9 @@ get_v5(Namespace, Name) when is_binary(Namespace) ->
 %% ===Convert a UUID to a string representation.===
 %% @end
 %%-------------------------------------------------------------------------
+
+-spec uuid_to_string(Value :: <<_:128>>) ->
+    string().
 
 uuid_to_string(Value)
     when is_binary(Value), byte_size(Value) == 16 ->
@@ -406,6 +448,9 @@ uuid_to_string(Value)
 %% ===Convert a string representation to a UUID.===
 %% @end
 %%-------------------------------------------------------------------------
+
+-spec string_to_uuid(string()) ->
+    <<_:128>>.
 
 string_to_uuid([N01, N02, N03, N04, N05, N06, N07, N08, $-,
                 N09, N10, N11, N12, $-,
@@ -506,6 +551,9 @@ string_to_uuid(N01, N02, N03, N04, N05, N06, N07, N08,
 %% @end
 %%-------------------------------------------------------------------------
 
+-spec increment(State :: #uuid_state{}) ->
+    #uuid_state{}.
+
 increment(#uuid_state{clock_seq = ClockSeq} = State) ->
     NextClockSeq = ClockSeq + 1,
     NewClockSeq = if
@@ -524,6 +572,9 @@ increment(#uuid_state{clock_seq = ClockSeq} = State) ->
 %% ===Regression test.===
 %% @end
 %%-------------------------------------------------------------------------
+
+-spec test() ->
+    ok.
 
 test() ->
     % version 1 tests
