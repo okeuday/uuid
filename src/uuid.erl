@@ -71,6 +71,7 @@
          get_v3/2,
          get_v4/0,
          get_v4/1,
+         get_v4_urandom/0,
          get_v4_urandom_bigint/0,
          get_v4_urandom_native/0,
          get_v5/1,
@@ -339,6 +340,31 @@ get_v4(weak) ->
 
 %%-------------------------------------------------------------------------
 %% @doc
+%% ===Get a v4 UUID (using Wichmann-Hill 2006).===
+%% random_wh06_int:uniform/1 repeats every 2.66e36 (2^121) approx.
+%% (see B.A. Wichmann and I.D.Hill, in 
+%%  'Generating good pseudo-random numbers',
+%%  Computational Statistics & Data Analysis 51 (2006) 1614-1622)
+%% a single random_wh06_int:uniform/1 call can provide a maximum of 124 bits
+%% (see random_wh06_int.erl for details)
+%% @end
+%%-------------------------------------------------------------------------
+
+-spec get_v4_urandom() ->
+    <<_:128>>.
+
+get_v4_urandom() ->
+    % random 122 bits
+    Rand = random_wh06_int:uniform(5316911983139663491615228241121378304) - 1,
+    <<Rand1:48, Rand2:18, Rand3:56>> = <<Rand:122>>,
+    <<Rand1:48,
+      0:1, 1:1, 0:1, 0:1,  % version 4 bits
+      Rand2:18,
+      1:1, 0:1,            % RFC 4122 variant bits
+      Rand3:56>>.
+
+%%-------------------------------------------------------------------------
+%% @doc
 %% ===Get a v4 UUID (using Wichmann-Hill 1982).===
 %% random:uniform/1 repeats every 2.78e13
 %% (see B.A. Wichmann and I.D.Hill, in 
@@ -347,6 +373,26 @@ get_v4(weak) ->
 %% a single random:uniform/1 call can provide a maximum of 45 bits
 %% (currently this is not significantly faster
 %%  because multiple function calls are necessary)
+%%
+%% explain the 45 bits of randomness:
+%%  random:uniform/0 code:
+%%   B1 = (A1*171) rem 30269,
+%%   B2 = (A2*172) rem 30307,
+%%   B3 = (A3*170) rem 30323,
+%%   put(random_seed, {B1,B2,B3}),
+%%   R = A1/30269 + A2/30307 + A3/30323,
+%%   R - trunc(R).
+%%
+%%  {B1, B2, B3} becomes the next seed value {A1, A2, A3}, so:
+%%    R = (918999161 * A1 + 917846887 * A2 + 917362583 * A3) / 27817185604309
+%%  Whatever the values for A1, A2, and A3,
+%%  (918999161 * A1 + 917846887 * A2 + 917362583 * A3) can not exceed
+%%  27817185604309 (30269 * 30307 * 30323) because of the previous modulus.
+%%  So, random:uniform/1 is unable to uniformly sample numbers beyond
+%%  a N of 27817185604309. The bits required to represent 27817185604309:
+%%   1> (math:log(27817185604309) / math:log(2)) + 1.
+%%   45.6610416965467
+%%
 %% @end
 %%-------------------------------------------------------------------------
 
