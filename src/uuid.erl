@@ -344,7 +344,7 @@ get_v4(weak) ->
 %% random_wh06_int:uniform/1 repeats every 2.66e36 (2^121) approx.
 %% (see B.A. Wichmann and I.D.Hill, in 
 %%  'Generating good pseudo-random numbers',
-%%  Computational Statistics & Data Analysis 51 (2006) 1614-1622)
+%%  Computational Statistics and Data Analysis 51 (2006) 1614-1622)
 %% a single random_wh06_int:uniform/1 call can provide a maximum of 124 bits
 %% (see random_wh06_int.erl for details)
 %% @end
