@@ -265,11 +265,11 @@ get_v1_time(Value)
 %% @end
 %%-------------------------------------------------------------------------
 
--spec get_v3(Name :: binary()) ->
+-spec get_v3(Data :: binary() | iolist()) ->
     <<_:128>>.
 
-get_v3(Name) ->
-    <<B1:48, B2a:18, B2b:6, B3:56>> = crypto:md5(Name),
+get_v3(Data) ->
+    <<B1:48, B2a:18, B2b:6, B3:56>> = crypto:md5(Data),
     B2 = B2a bxor B2b,
     <<B1:48,
       0:1, 0:1, 1:1, 1:1,  % version 3 bits
@@ -283,17 +283,17 @@ get_v3(Name) ->
 %% @end
 %%-------------------------------------------------------------------------
 
--spec get_v3(Namespace :: binary(), Name :: binary()) ->
+-spec get_v3(Namespace :: binary(), Data :: binary() | list()) ->
     <<_:128>>.
 
-get_v3(Namespace, Name) when is_binary(Namespace) ->
-    NameBin = if
-        is_binary(Name) ->
-            Name;
-        is_list(Name) ->
-            erlang:list_to_binary(Name)
+get_v3(Namespace, Data) when is_binary(Namespace) ->
+    DataBin = if
+        is_binary(Data) ->
+            Data;
+        is_list(Data) ->
+            erlang:list_to_binary(Data)
     end,
-    get_v3(<<Namespace/binary, NameBin/binary>>).
+    get_v3(<<Namespace/binary, DataBin/binary>>).
 
 %%-------------------------------------------------------------------------
 %% @doc
@@ -440,11 +440,11 @@ get_v4_urandom_native() ->
 %% @end
 %%-------------------------------------------------------------------------
 
--spec get_v5(Name :: binary()) ->
+-spec get_v5(Data :: binary() | iolist()) ->
     <<_:128>>.
 
-get_v5(Name) ->
-    <<B1:48, B2:18, B3a:38, B3b:56>> = crypto:sha(Name),
+get_v5(Data) ->
+    <<B1:48, B2:18, B3a:38, B3b:56>> = crypto:sha(Data),
     B3 = B3a bxor B3b,
     <<B1:48,
       0:1, 1:1, 0:1, 1:1,  % version 5 bits
@@ -458,17 +458,17 @@ get_v5(Name) ->
 %% @end
 %%-------------------------------------------------------------------------
 
--spec get_v5(Namespace :: binary(), Name :: binary()) ->
+-spec get_v5(Namespace :: binary(), Data :: binary() | list()) ->
     <<_:128>>.
 
-get_v5(Namespace, Name) when is_binary(Namespace) ->
-    NameBin = if
-        is_binary(Name) ->
-            Name;
-        is_list(Name) ->
-            erlang:list_to_binary(Name)
+get_v5(Namespace, Data) when is_binary(Namespace) ->
+    DataBin = if
+        is_binary(Data) ->
+            Data;
+        is_list(Data) ->
+            erlang:list_to_binary(Data)
     end,
-    get_v5(<<Namespace/binary, NameBin/binary>>).
+    get_v5(<<Namespace/binary, DataBin/binary>>).
 
 %%-------------------------------------------------------------------------
 %% @doc
