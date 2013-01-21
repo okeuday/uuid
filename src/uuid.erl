@@ -76,7 +76,9 @@
          get_v4_urandom_native/0,
          get_v5/1,
          get_v5/2,
+         uuid_to_list/1,
          uuid_to_string/1,
+         uuid_to_string/2,
          string_to_uuid/1,
          increment/1,
          test/0]).
@@ -472,6 +474,24 @@ get_v5(Namespace, Data) when is_binary(Namespace) ->
 
 %%-------------------------------------------------------------------------
 %% @doc
+%% ===Convert a UUID to a list.===
+%% @end
+%%-------------------------------------------------------------------------
+
+-spec uuid_to_list(Value :: <<_:128>>) ->
+    iolist().
+
+uuid_to_list(Value) 
+    when is_binary(Value), byte_size(Value) == 16 ->
+    <<B1:32/unsigned-integer,
+      B2:16/unsigned-integer,
+      B3:16/unsigned-integer,
+      B4:16/unsigned-integer,
+      B5:48/unsigned-integer>> = Value,
+    [B1, B2, B3, B4, B5].
+
+%%-------------------------------------------------------------------------
+%% @doc
 %% ===Convert a UUID to a string representation.===
 %% @end
 %%-------------------------------------------------------------------------
@@ -479,15 +499,19 @@ get_v5(Namespace, Data) when is_binary(Namespace) ->
 -spec uuid_to_string(Value :: <<_:128>>) ->
     string().
 
-uuid_to_string(Value)
-    when is_binary(Value), byte_size(Value) == 16 ->
-    <<B1:32/unsigned-integer,
-      B2:16/unsigned-integer,
-      B3:16/unsigned-integer,
-      B4:16/unsigned-integer,
-      B5:48/unsigned-integer>> = Value,
+uuid_to_string(Value) ->
+    uuid_to_string(Value, standard).
+
+uuid_to_string(Value, standard) ->
+    [B1, B2, B3, B4, B5] = uuid_to_list(Value),
     lists:flatten(io_lib:format("~8.16.0b-~4.16.0b-~4.16.0b-~4.16.0b-~12.16.0b",
+                                [B1, B2, B3, B4, B5]));
+
+uuid_to_string(Value, nodash) ->
+    [B1, B2, B3, B4, B5] = uuid_to_list(Value),
+    lists:flatten(io_lib:format("~8.16.0b~4.16.0b~4.16.0b~4.16.0b~12.16.0b",
                                 [B1, B2, B3, B4, B5])).
+
 
 %%-------------------------------------------------------------------------
 %% @doc
