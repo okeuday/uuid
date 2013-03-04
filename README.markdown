@@ -14,6 +14,12 @@ methods are provided as specified within the RFC.
 
 Requires Erlang >= R14B01
 
+Build
+-----
+
+rebar get-deps
+rebar compile
+
 Author
 ------
 
