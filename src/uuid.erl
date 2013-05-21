@@ -19,7 +19,7 @@
 %%%
 %%% BSD LICENSE
 %%% 
-%%% Copyright (c) 2011-2012, Michael Truog <mjtruog at gmail dot com>
+%%% Copyright (c) 2011-2013, Michael Truog <mjtruog at gmail dot com>
 %%% All rights reserved.
 %%% 
 %%% Redistribution and use in source and binary forms, with or without
@@ -54,8 +54,8 @@
 %%% DAMAGE.
 %%%
 %%% @author Michael Truog <mjtruog [at] gmail (dot) com>
-%%% @copyright 2011-2012 Michael Truog
-%%% @version 1.1.1 {@date} {@time}
+%%% @copyright 2011-2013 Michael Truog
+%%% @version 1.2.2 {@date} {@time}
 %%%------------------------------------------------------------------------
 
 -module(uuid).
@@ -69,6 +69,8 @@
          get_v1_time/1,
          get_v3/1,
          get_v3/2,
+         get_v3_compat/1,
+         get_v3_compat/2,
          get_v4/0,
          get_v4/1,
          get_v4_urandom/0,
@@ -76,6 +78,8 @@
          get_v4_urandom_native/0,
          get_v5/1,
          get_v5/2,
+         get_v5_compat/1,
+         get_v5_compat/2,
          uuid_to_list/1,
          uuid_to_string/1,
          uuid_to_string/2,
@@ -285,9 +289,18 @@ get_v3(Data) ->
 %% @end
 %%-------------------------------------------------------------------------
 
--spec get_v3(Namespace :: binary(), Data :: binary() | list()) ->
+-spec get_v3(Namespace :: dns | url | oid | x500 | binary(),
+             Data :: binary() | list()) ->
     <<_:128>>.
 
+get_v3(dns, Data) ->
+    get_v3(?UUID_NAMESPACE_DNS, Data);
+get_v3(url, Data) ->
+    get_v3(?UUID_NAMESPACE_URL, Data);
+get_v3(oid, Data) ->
+    get_v3(?UUID_NAMESPACE_OID, Data);
+get_v3(x500, Data) ->
+    get_v3(?UUID_NAMESPACE_X500, Data);
 get_v3(Namespace, Data) when is_binary(Namespace) ->
     DataBin = if
         is_binary(Data) ->
@@ -296,6 +309,55 @@ get_v3(Namespace, Data) when is_binary(Namespace) ->
             erlang:list_to_binary(Data)
     end,
     get_v3(<<Namespace/binary, DataBin/binary>>).
+
+%%-------------------------------------------------------------------------
+%% @doc
+%% ===Get a compatible v3 UUID.===
+%% Do not use all bits from the checksum so that the UUID matches external
+%% implementations.
+%% @end
+%%-------------------------------------------------------------------------
+
+-spec get_v3_compat(Data :: binary() | iolist()) ->
+    <<_:128>>.
+
+get_v3_compat(Data) ->
+    <<B1:48, _:4, B2a:12, B2b:6, _:2, B3:56>> = crypto:md5(Data),
+    <<B1:48,
+      0:1, 0:1, 1:1, 1:1,  % version 3 bits
+      B2a:12,
+      B2b:6,
+      0:1, 0:1,            % reserved, NCS backward compatibility
+      B3:56>>.
+
+%%-------------------------------------------------------------------------
+%% @doc
+%% ===Get a compatible v3 UUID in a particular namespace.===
+%% Do not use all bits from the checksum so that the UUID matches external
+%% implementations.
+%% @end
+%%-------------------------------------------------------------------------
+
+-spec get_v3_compat(Namespace :: dns | url | oid | x500 | binary(),
+                    Data :: binary() | list()) ->
+    <<_:128>>.
+
+get_v3_compat(dns, Data) ->
+    get_v3_compat(?UUID_NAMESPACE_DNS, Data);
+get_v3_compat(url, Data) ->
+    get_v3_compat(?UUID_NAMESPACE_URL, Data);
+get_v3_compat(oid, Data) ->
+    get_v3_compat(?UUID_NAMESPACE_OID, Data);
+get_v3_compat(x500, Data) ->
+    get_v3_compat(?UUID_NAMESPACE_X500, Data);
+get_v3_compat(Namespace, Data) when is_binary(Namespace) ->
+    DataBin = if
+        is_binary(Data) ->
+            Data;
+        is_list(Data) ->
+            erlang:list_to_binary(Data)
+    end,
+    get_v3_compat(<<Namespace/binary, DataBin/binary>>).
 
 %%-------------------------------------------------------------------------
 %% @doc
@@ -460,9 +522,18 @@ get_v5(Data) ->
 %% @end
 %%-------------------------------------------------------------------------
 
--spec get_v5(Namespace :: binary(), Data :: binary() | list()) ->
+-spec get_v5(Namespace :: dns | url | oid | x500 | binary(),
+             Data :: binary() | list()) ->
     <<_:128>>.
 
+get_v5(dns, Data) ->
+    get_v5(?UUID_NAMESPACE_DNS, Data);
+get_v5(url, Data) ->
+    get_v5(?UUID_NAMESPACE_URL, Data);
+get_v5(oid, Data) ->
+    get_v5(?UUID_NAMESPACE_OID, Data);
+get_v5(x500, Data) ->
+    get_v5(?UUID_NAMESPACE_X500, Data);
 get_v5(Namespace, Data) when is_binary(Namespace) ->
     DataBin = if
         is_binary(Data) ->
@@ -471,6 +542,54 @@ get_v5(Namespace, Data) when is_binary(Namespace) ->
             erlang:list_to_binary(Data)
     end,
     get_v5(<<Namespace/binary, DataBin/binary>>).
+
+%%-------------------------------------------------------------------------
+%% @doc
+%% ===Get a compatible v5 UUID.===
+%% Do not use all bits from the checksum so that the UUID matches external
+%% implementations.
+%% @end
+%%-------------------------------------------------------------------------
+
+-spec get_v5_compat(Data :: binary() | iolist()) ->
+    <<_:128>>.
+
+get_v5_compat(Data) ->
+    <<B1:48, _:4, B2:18, _:2, B3:56, _:32>> = crypto:sha(Data),
+    <<B1:48,
+      0:1, 1:1, 0:1, 1:1,  % version 5 bits
+      B2:18,
+      1:1, 1:1,            % reserved, future bits
+      B3:56>>.
+
+%%-------------------------------------------------------------------------
+%% @doc
+%% ===Get a compatible v5 UUID in a particular namespace.===
+%% Do not use all bits from the checksum so that the UUID matches external
+%% implementations.
+%% @end
+%%-------------------------------------------------------------------------
+
+-spec get_v5_compat(Namespace :: dns | url | oid | x500 | binary(),
+                    Data :: binary() | list()) ->
+    <<_:128>>.
+
+get_v5_compat(dns, Data) ->
+    get_v5_compat(?UUID_NAMESPACE_DNS, Data);
+get_v5_compat(url, Data) ->
+    get_v5_compat(?UUID_NAMESPACE_URL, Data);
+get_v5_compat(oid, Data) ->
+    get_v5_compat(?UUID_NAMESPACE_OID, Data);
+get_v5_compat(x500, Data) ->
+    get_v5_compat(?UUID_NAMESPACE_X500, Data);
+get_v5_compat(Namespace, Data) when is_binary(Namespace) ->
+    DataBin = if
+        is_binary(Data) ->
+            Data;
+        is_list(Data) ->
+            erlang:list_to_binary(Data)
+    end,
+    get_v5_compat(<<Namespace/binary, DataBin/binary>>).
 
 %%-------------------------------------------------------------------------
 %% @doc
@@ -718,6 +837,7 @@ test() ->
       0:1, 0:1,            % reserved, NCS backward compatibility
       V3uuid1C:56>> = V3uuid1,
     V3uuid2 = uuid:get_v3(?UUID_NAMESPACE_DNS, <<"test">>),
+    true = (V3uuid2 == uuid:get_v3(dns, <<"test">>)),
     <<V3uuid2A:48,
       0:1, 0:1, 1:1, 1:1,  % version 3 bits
       V3uuid2B:18,
@@ -729,6 +849,10 @@ test() ->
     % since the python uuid throws bits from MD5 while this module
     % bitwise xor the middle bits to utilize the whole checksum
     false = V3uuid1B == V3uuid2B,
+
+    % TODO add tests for get_v3_compat and get_v5_compat
+    % (both differ by a single bit for an unknown reason
+    %  i.e., differ from other impl, not the version/reserved bits)
 
     % version 4 tests
     % uuidgen -r
@@ -776,6 +900,7 @@ test() ->
       1:1, 1:1,            % reserved, future bits
       V5uuid1C:56>> = V5uuid1,
     V5uuid2 = uuid:get_v5(?UUID_NAMESPACE_DNS, <<"test">>),
+    true = (V5uuid2 == uuid:get_v5(dns, <<"test">>)),
     <<V5uuid2A:48,
       0:1, 1:1, 0:1, 1:1,  % version 5 bits
       V5uuid2B:18,
