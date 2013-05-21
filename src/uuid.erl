@@ -91,8 +91,6 @@
     {
         node_id,
         clock_seq,
-        clock_seq_high,
-        clock_seq_low,
         timestamp_type
     }).
 
@@ -172,13 +170,10 @@ new(Pid, TimestampType)
     PidByte3 = PidID3 bxor PidSR2,
     PidByte4 = PidID4 bxor PidSR1,
     ClockSeq = random:uniform(16384) - 1,
-    <<ClockSeqHigh:6, ClockSeqLow:8>> = <<ClockSeq:14>>,
     #uuid_state{node_id = <<NodeByte1:8, NodeByte2:8,
                             PidByte1:8, PidByte2:8,
                             PidByte3:8, PidByte4:8>>,
                 clock_seq = ClockSeq,
-                clock_seq_high = ClockSeqHigh,
-                clock_seq_low = ClockSeqLow,
                 timestamp_type = TimestampType}.
 
 %%-------------------------------------------------------------------------
@@ -191,8 +186,7 @@ new(Pid, TimestampType)
     <<_:128>>.
 
 get_v1(#uuid_state{node_id = NodeId,
-                   clock_seq_high = ClockSeqHigh,
-                   clock_seq_low = ClockSeqLow,
+                   clock_seq = ClockSeq,
                    timestamp_type = TimestampType}) ->
     {MegaSeconds, Seconds, MicroSeconds} = if
         TimestampType =:= erlang ->
@@ -208,9 +202,8 @@ get_v1(#uuid_state{node_id = NodeId,
     <<TimeLow:32, TimeMid:16,
       0:1, 0:1, 0:1, 1:1,  % version 1 bits
       TimeHigh:12,
-      ClockSeqHigh:6,
-      0:1, 0:1,            % reserved, NCS backward compatibility
-      ClockSeqLow:8,
+      1:1, 0:1,            % RFC 4122 variant bits
+      ClockSeq:14,
       NodeId/binary>>.
 
 %%-------------------------------------------------------------------------
@@ -259,9 +252,9 @@ get_v1_time(Value)
     <<TimeLow:32, TimeMid:16,
       0:1, 0:1, 0:1, 1:1,  % version 1 bits
       TimeHigh:12,
-      _:6,
-      0:1, 0:1,            % reserved, NCS backward compatibility
-      _:8, _:48>> = Value,
+      1:1, 0:1,            % RFC 4122 variant bits
+      _:14,
+      _:48>> = Value,
     <<Time:60>> = <<TimeHigh:12, TimeMid:16, TimeLow:32>>,
     erlang:trunc((Time - 16#01b21dd213814000) / 10). % microseconds since epoch
 
@@ -275,13 +268,15 @@ get_v1_time(Value)
     <<_:128>>.
 
 get_v3(Data) ->
-    <<B1:48, B2a:18, B2b:6, B3:56>> = crypto:md5(Data),
-    B2 = B2a bxor B2b,
+    <<B1:48, B4a:4, B2:12, B4b:2, B3:14, B4c:48>> =
+        crypto:md5(Data),
+    B4 = (B4a bxor B4b) bxor B4c,
     <<B1:48,
       0:1, 0:1, 1:1, 1:1,  % version 3 bits
-      B2:18,
-      0:1, 0:1,            % reserved, NCS backward compatibility
-      B3:56>>.
+      B2:12,
+      1:1, 0:1,            % RFC 4122 variant bits
+      B3:14,
+      B4:48>>.
 
 %%-------------------------------------------------------------------------
 %% @doc
@@ -322,13 +317,14 @@ get_v3(Namespace, Data) when is_binary(Namespace) ->
     <<_:128>>.
 
 get_v3_compat(Data) ->
-    <<B1:48, _:4, B2a:12, B2b:6, _:2, B3:56>> = crypto:md5(Data),
+    <<B1:48, _:4, B2:12, _:2, B3:14, B4:48>> =
+        crypto:md5(Data),
     <<B1:48,
       0:1, 0:1, 1:1, 1:1,  % version 3 bits
-      B2a:12,
-      B2b:6,
-      0:1, 0:1,            % reserved, NCS backward compatibility
-      B3:56>>.
+      B2:12,
+      1:1, 0:1,            % RFC 4122 variant bits
+      B3:14,
+      B4:48>>.
 
 %%-------------------------------------------------------------------------
 %% @doc
@@ -387,20 +383,20 @@ get_v4() ->
     <<_:128>>.
 
 get_v4(strong) ->
-    <<Rand1:48, _:4, Rand2:18, _:2, Rand3:56>> = crypto:strong_rand_bytes(16),
+    <<Rand1:48, _:4, Rand2:12, _:2, Rand3:62>> = crypto:strong_rand_bytes(16),
     <<Rand1:48,
       0:1, 1:1, 0:1, 0:1,  % version 4 bits
-      Rand2:18,
+      Rand2:12,
       1:1, 0:1,            % RFC 4122 variant bits
-      Rand3:56>>;
+      Rand3:62>>;
 
 get_v4(weak) ->
-    <<Rand1:48, _:4, Rand2:18, _:2, Rand3:56>> = crypto:rand_bytes(16),
+    <<Rand1:48, _:4, Rand2:12, _:2, Rand3:62>> = crypto:rand_bytes(16),
     <<Rand1:48,
       0:1, 1:1, 0:1, 0:1,  % version 4 bits
-      Rand2:18,
+      Rand2:12,
       1:1, 0:1,            % RFC 4122 variant bits
-      Rand3:56>>.
+      Rand3:62>>.
 
 %%-------------------------------------------------------------------------
 %% @doc
@@ -420,12 +416,12 @@ get_v4(weak) ->
 get_v4_urandom() ->
     % random 122 bits
     Rand = random_wh06_int:uniform(5316911983139663491615228241121378304) - 1,
-    <<Rand1:48, Rand2:18, Rand3:56>> = <<Rand:122>>,
+    <<Rand1:48, Rand2:12, Rand3:62>> = <<Rand:122>>,
     <<Rand1:48,
       0:1, 1:1, 0:1, 0:1,  % version 4 bits
-      Rand2:18,
+      Rand2:12,
       1:1, 0:1,            % RFC 4122 variant bits
-      Rand3:56>>.
+      Rand3:62>>.
 
 %%-------------------------------------------------------------------------
 %% @doc
@@ -467,12 +463,12 @@ get_v4_urandom_bigint() ->
     Rand1 = random:uniform(2199023255552) - 1, % random 41 bits
     Rand2 = random:uniform(2199023255552) - 1, % random 41 bits
     Rand3 = random:uniform(1099511627776) - 1, % random 40 bits
-    <<Rand2a:7, Rand2b:18, Rand2c:16>> = <<Rand2:41>>,
+    <<Rand2a:7, Rand2b:12, Rand2c:22>> = <<Rand2:41>>,
     <<Rand1:41, Rand2a:7,
       0:1, 1:1, 0:1, 0:1,  % version 4 bits
-      Rand2b:18,
+      Rand2b:12,
       1:1, 0:1,            % RFC 4122 variant bits
-      Rand2c:16, Rand3:40>>.
+      Rand2c:22, Rand3:40>>.
 
 %%-------------------------------------------------------------------------
 %% @doc
@@ -491,12 +487,12 @@ get_v4_urandom_native() ->
     Rand3 = random:uniform(1048576) - 1,   % random 20 bits
     Rand4 = random:uniform(134217728) - 1, % random 27 bits
     Rand5 = random:uniform(134217728) - 1, % random 27 bits
-    <<Rand3a:18, Rand3b:2>> = <<Rand3:20>>,
+    <<Rand3a:12, Rand3b:8>> = <<Rand3:20>>,
     <<Rand1:27, Rand2:21,
       0:1, 1:1, 0:1, 0:1,  % version 4 bits
-      Rand3a:18, 
+      Rand3a:12, 
       1:1, 0:1,            % RFC 4122 variant bits
-      Rand3b:2, Rand4:27, Rand5:27>>.
+      Rand3b:8, Rand4:27, Rand5:27>>.
 
 %%-------------------------------------------------------------------------
 %% @doc
@@ -508,13 +504,15 @@ get_v4_urandom_native() ->
     <<_:128>>.
 
 get_v5(Data) ->
-    <<B1:48, B2:18, B3a:38, B3b:56>> = crypto:sha(Data),
-    B3 = B3a bxor B3b,
+    <<B1:48, B4a:4, B2:12, B4b:2, B3:14, B4c:32, B4d:48>> =
+        crypto:sha(Data),
+    B4 = ((B4a bxor B4b) bxor B4c) bxor B4d,
     <<B1:48,
       0:1, 1:1, 0:1, 1:1,  % version 5 bits
-      B2:18,
-      1:1, 1:1,            % reserved, future bits
-      B3:56>>.
+      B2:12,
+      1:1, 0:1,            % RFC 4122 variant bits
+      B3:14,
+      B4:48>>.
 
 %%-------------------------------------------------------------------------
 %% @doc
@@ -555,12 +553,14 @@ get_v5(Namespace, Data) when is_binary(Namespace) ->
     <<_:128>>.
 
 get_v5_compat(Data) ->
-    <<B1:48, _:4, B2:18, _:2, B3:56, _:32>> = crypto:sha(Data),
+    <<B1:48, _:4, B2:12, _:2, B3:14, B4:48, _:32>> =
+        crypto:sha(<<Data/binary>>),
     <<B1:48,
       0:1, 1:1, 0:1, 1:1,  % version 5 bits
-      B2:18,
-      1:1, 1:1,            % reserved, future bits
-      B3:56>>.
+      B2:12,
+      1:1, 0:1,            % RFC 4122 variant bits
+      B3:14,
+      B4:48>>.
 
 %%-------------------------------------------------------------------------
 %% @doc
@@ -751,10 +751,7 @@ increment(#uuid_state{clock_seq = ClockSeq} = State) ->
         true ->
             NextClockSeq
     end,
-    <<ClockSeqHigh:6, ClockSeqLow:8>> = <<NewClockSeq:14>>,
-    State#uuid_state{clock_seq = NewClockSeq,
-                     clock_seq_high = ClockSeqHigh,
-                     clock_seq_low = ClockSeqLow}.
+    State#uuid_state{clock_seq = NewClockSeq}.
 
 %%-------------------------------------------------------------------------
 %% @doc
@@ -774,11 +771,9 @@ test() ->
     <<V1TimeLow1:32, V1TimeMid1:16,
       0:1, 0:1, 0:1, 1:1,  % version 1 bits
       V1TimeHigh1:12,
-      V1ClockSeqHigh1:6,
-      0:1, 0:1,            % reserved, NCS backward compatibility
-      V1ClockSeqLow1:8,
+      1:1, 0:1,            % RFC 4122 variant bits
+      V1ClockSeq1:14,
       V1NodeId1/binary>> = V1uuid1,
-    <<V1ClockSeq1:14>> = <<V1ClockSeqHigh1:6, V1ClockSeqLow1:8>>,
     <<V1Time1:60>> = <<V1TimeHigh1:12, V1TimeMid1:16, V1TimeLow1:32>>,
     V1Time1total = erlang:trunc((V1Time1 - 16#01b21dd213814000) / 10),
     V1Time1mega = erlang:trunc(V1Time1total / 1000000000000),
@@ -797,11 +792,9 @@ test() ->
     <<V1TimeLow2:32, V1TimeMid2:16,
       0:1, 0:1, 0:1, 1:1,  % version 1 bits
       V1TimeHigh2:12,
-      V1ClockSeqHigh2:6,
-      0:1, 0:1,            % reserved, NCS backward compatibility
-      V1ClockSeqLow2:8,
+      1:1, 0:1,            % RFC 4122 variant bits
+      V1ClockSeq2:14,
       V1NodeId2/binary>> = V1uuid2,
-    <<V1ClockSeq2:14>> = <<V1ClockSeqHigh2:6, V1ClockSeqLow2:8>>,
     <<V1Time2:60>> = <<V1TimeHigh2:12, V1TimeMid2:16, V1TimeLow2:32>>,
     V1Time2total = erlang:trunc((V1Time2 - 16#01b21dd213814000) / 10),
     V1Time2Amega = erlang:trunc(V1Time2total / 1000000000000),
@@ -824,6 +817,14 @@ test() ->
     V1uuid3timeA = uuid:get_v1_time(V1uuid3),
     true = (V1uuid3timeA < V1uuid3timeB) and
            ((V1uuid3timeA + 1000) > V1uuid3timeB),
+    true = is_number(uuid:get_v1_time(
+        uuid:string_to_uuid("3ff0fc1e-c23b-11e2-b8a0-38607751fca5"))),
+    true = is_number(uuid:get_v1_time(
+        uuid:string_to_uuid("67ff79a6-c23b-11e2-b374-38607751fca5"))),
+    true = is_number(uuid:get_v1_time(
+        uuid:string_to_uuid("7134eede-c23b-11e2-a4a7-38607751fca5"))),
+    true = is_number(uuid:get_v1_time(
+        uuid:string_to_uuid("717003c0-c23b-11e2-83a4-38607751fca5"))),
 
     % version 3 tests
     % $ python
@@ -833,60 +834,69 @@ test() ->
     V3uuid1 = uuid:string_to_uuid("45a113acc7f230b090a5a399ab912716"),
     <<V3uuid1A:48,
       0:1, 0:1, 1:1, 1:1,  % version 3 bits
-      V3uuid1B:18,
-      0:1, 0:1,            % reserved, NCS backward compatibility
-      V3uuid1C:56>> = V3uuid1,
+      V3uuid1B:12,
+      1:1, 0:1,            % RFC 4122 variant bits
+      V3uuid1C:14,
+      V3uuid1D:48>> = V3uuid1,
     V3uuid2 = uuid:get_v3(?UUID_NAMESPACE_DNS, <<"test">>),
     true = (V3uuid2 == uuid:get_v3(dns, <<"test">>)),
     <<V3uuid2A:48,
       0:1, 0:1, 1:1, 1:1,  % version 3 bits
-      V3uuid2B:18,
-      0:1, 0:1,            % reserved, NCS backward compatibility
-      V3uuid2C:56>> = V3uuid2,
-    true = (V3uuid1A == V3uuid2A) and
-           (V3uuid1C == V3uuid2C),
+      V3uuid2B:12,
+      1:1, 0:1,            % RFC 4122 variant bits
+      V3uuid2C:14,
+      V3uuid2D:48>> = V3uuid2,
+    true = ((V3uuid1A == V3uuid2A) and
+            (V3uuid1B == V3uuid2B) and
+            (V3uuid1C == V3uuid2C)),
     % check fails:
-    % since the python uuid throws bits from MD5 while this module
+    % since the python uuid discards bits from MD5 while this module
     % bitwise xor the middle bits to utilize the whole checksum
-    false = V3uuid1B == V3uuid2B,
+    false = (V3uuid1D == V3uuid2D),
 
-    % TODO add tests for get_v3_compat and get_v5_compat
-    % (both differ by a single bit for an unknown reason
-    %  i.e., differ from other impl, not the version/reserved bits)
+    % replicate the same UUID value used in other implementations
+    % where bits are discarded from the checksum
+    V3uuid1 = uuid:get_v3_compat(?UUID_NAMESPACE_DNS, <<"test">>),
+    true = (uuid:get_v3_compat(dns, <<"test1">>) ==
+            uuid:string_to_uuid("c501822b22a837ff91a99545f4689a3d")),
+    true = (uuid:get_v3_compat(dns, <<"test2">>) ==
+            uuid:string_to_uuid("f191764306b23e6dab770a5044067d0a")),
+    true = (uuid:get_v3_compat(dns, <<"test3">>) ==
+            uuid:string_to_uuid("bf7f1e5a6b28310c8f9ef815dbd56fb7")),
+    true = (uuid:get_v3_compat(dns, <<"test4">>) ==
+            uuid:string_to_uuid("fe584e2496c83d2d8b39f1cc6a877f72")),
 
     % version 4 tests
     % uuidgen -r
-    V4uuid3 = uuid:string_to_uuid("ffe8b758-a5dc-4bf4-9eb0-878e010e8df7"),
-    <<V4Rand3A:48,
+    V4uuid1 = uuid:string_to_uuid("ffe8b758-a5dc-4bf4-9eb0-878e010e8df7"),
+    <<V4Rand1A:48,
       0:1, 1:1, 0:1, 0:1,  % version 4 bits
-      V4Rand3B:18,
+      V4Rand1B:12,
       1:1, 0:1,            % RFC 4122 variant bits
-      V4Rand3C:56>> = V4uuid3,
-    V4uuid4 = uuid:get_v4(strong),
-    <<V4Rand4A:48,
-      0:1, 1:1, 0:1, 0:1,  % version 4 bits
-      V4Rand4B:18,
-      1:1, 0:1,            % RFC 4122 variant bits
-      V4Rand4C:56>> = V4uuid4,
+      V4Rand1C:14,
+      V4Rand1D:48>> = V4uuid1,
     % $ python
     % >>> import uuid
     % >>> uuid.uuid4().hex
     % 'cc9769818fe747398e2422e99fee2753'
-    V4uuid5 = uuid:string_to_uuid("cc9769818fe747398e2422e99fee2753"),
-    <<V4Rand5A:48,
+    V4uuid2 = uuid:string_to_uuid("cc9769818fe747398e2422e99fee2753"),
+    <<V4Rand2A:48,
       0:1, 1:1, 0:1, 0:1,  % version 4 bits
-      V4Rand5B:18,
+      V4Rand2B:12,
       1:1, 0:1,            % RFC 4122 variant bits
-      V4Rand5C:56>> = V4uuid5,
-    true = (V4Rand3A /= V4Rand4A) and
-           (V4Rand4A /= V4Rand5A) and
-           (V4Rand3A /= V4Rand5A),
-    true = (V4Rand3B /= V4Rand4B) and
-           (V4Rand4B /= V4Rand5B) and
-           (V4Rand3B /= V4Rand5B),
-    true = (V4Rand3C /= V4Rand4C) and
-           (V4Rand4C /= V4Rand5C) and
-           (V4Rand3C /= V4Rand5C),
+      V4Rand2C:14,
+      V4Rand2D:48>> = V4uuid2,
+    V4uuid3 = uuid:get_v4(strong),
+    <<_:48,
+      0:1, 1:1, 0:1, 0:1,  % version 4 bits
+      _:12,
+      1:1, 0:1,            % RFC 4122 variant bits
+      _:14,
+      _:48>> = V4uuid3,
+    true = (V4Rand1A /= V4Rand2A),
+    true = (V4Rand1B /= V4Rand2B),
+    true = (V4Rand1C /= V4Rand2C),
+    true = (V4Rand1D /= V4Rand2D),
 
     % version 5 tests
     % $ python
@@ -896,22 +906,37 @@ test() ->
     V5uuid1 = uuid:string_to_uuid("4be0643f1d98573b97cdca98a65347dd"),
     <<V5uuid1A:48,
       0:1, 1:1, 0:1, 1:1,  % version 5 bits
-      V5uuid1B:18,
-      1:1, 1:1,            % reserved, future bits
-      V5uuid1C:56>> = V5uuid1,
+      V5uuid1B:12,
+      1:1, 0:1,            % RFC 4122 variant bits
+      V5uuid1C:14,
+      V5uuid1D:48>> = V5uuid1,
     V5uuid2 = uuid:get_v5(?UUID_NAMESPACE_DNS, <<"test">>),
     true = (V5uuid2 == uuid:get_v5(dns, <<"test">>)),
     <<V5uuid2A:48,
       0:1, 1:1, 0:1, 1:1,  % version 5 bits
-      V5uuid2B:18,
-      1:1, 1:1,            % reserved, future bits
-      V5uuid2C:56>> = V5uuid2,
-    true = V5uuid1A == V5uuid2A,
+      V5uuid2B:12,
+      1:1, 0:1,            % RFC 4122 variant bits
+      V5uuid2C:14,
+      V5uuid2D:48>> = V5uuid2,
+    true = ((V5uuid1A == V5uuid2A) and
+            (V5uuid1B == V5uuid2B) and
+            (V5uuid1C == V5uuid2C)),
     % check fails:
-    % since the python uuid throws bits from SHA while this module
+    % since the python uuid discards bits from SHA while this module
     % bitwise xor the remaining bits to utilize the whole checksum
-    false = (V5uuid1B == V5uuid2B) or
-            (V5uuid1C == V5uuid2C),
+    false = (V5uuid1D == V5uuid2D),
+
+    % replicate the same UUID value used in other implementations
+    % where bits are discarded from the checksum
+    V5uuid1 = uuid:get_v5_compat(?UUID_NAMESPACE_DNS, <<"test">>),
+    true = (uuid:get_v5_compat(dns, <<"test1">>) ==
+            uuid:string_to_uuid("86e3aed315535d238d612286215e65f1")),
+    true = (uuid:get_v5_compat(dns, <<"test2">>) ==
+            uuid:string_to_uuid("6eabff02c9685cbcbc7f3b672928a761")),
+    true = (uuid:get_v5_compat(dns, <<"test3">>) ==
+            uuid:string_to_uuid("20ca53afd04c58a2a8b3d02b9e414e80")),
+    true = (uuid:get_v5_compat(dns, <<"test4">>) ==
+            uuid:string_to_uuid("3e673fdc1a4f5b168890dbe7e763f7b5")),
     ok.
 
 %%%------------------------------------------------------------------------
