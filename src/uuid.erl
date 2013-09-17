@@ -702,16 +702,47 @@ uuid_to_list(Value)
 uuid_to_string(Value) ->
     uuid_to_string(Value, standard).
 
+%%-------------------------------------------------------------------------
+%% @doc
+%% ===Convert a UUID to a string representation based on an option.===
+%% @end
+%%-------------------------------------------------------------------------
+
+-spec uuid_to_string(Value :: <<_:128>>,
+                     Option :: standard | nodash |
+                               list_standard | list_nodash |
+                               binary_standard | binary_nodash) ->
+    string() | binary().
+
 uuid_to_string(Value, standard) ->
     [B1, B2, B3, B4, B5] = uuid_to_list(Value),
-    lists:flatten(io_lib:format("~8.16.0b-~4.16.0b-~4.16.0b-~4.16.0b-~12.16.0b",
+    lists:flatten(io_lib:format("~8.16.0b-~4.16.0b-~4.16.0b-"
+                                "~4.16.0b-~12.16.0b",
                                 [B1, B2, B3, B4, B5]));
 
 uuid_to_string(Value, nodash) ->
     [B1, B2, B3, B4, B5] = uuid_to_list(Value),
-    lists:flatten(io_lib:format("~8.16.0b~4.16.0b~4.16.0b~4.16.0b~12.16.0b",
-                                [B1, B2, B3, B4, B5])).
+    lists:flatten(io_lib:format("~8.16.0b~4.16.0b~4.16.0b"
+                                "~4.16.0b~12.16.0b",
+                                [B1, B2, B3, B4, B5]));
 
+uuid_to_string(Value, list_standard) ->
+    uuid_to_string(Value, standard);
+
+uuid_to_string(Value, list_nodash) ->
+    uuid_to_string(Value, nodash);
+
+uuid_to_string(Value, binary_standard) ->
+    [B1, B2, B3, B4, B5] = uuid_to_list(Value),
+    erlang:iolist_to_binary(io_lib:format("~8.16.0b-~4.16.0b-~4.16.0b-"
+                                          "~4.16.0b-~12.16.0b",
+                                          [B1, B2, B3, B4, B5]));
+
+uuid_to_string(Value, binary_nodash) ->
+    [B1, B2, B3, B4, B5] = uuid_to_list(Value),
+    erlang:iolist_to_binary(io_lib:format("~8.16.0b~4.16.0b~4.16.0b"
+                                          "~4.16.0b~12.16.0b",
+                                          [B1, B2, B3, B4, B5])).
 
 %%-------------------------------------------------------------------------
 %% @doc
