@@ -413,8 +413,7 @@ is_v3(_) ->
 %% ([http://eprint.iacr.org/2008/469.pdf]).  So, that means "weak" would
 %% repeat ideally every 1.21e24 and at worst every 2.25e15.
 %% if OpenSSL was compiled in FIPS mode, it uses ANSI X9.31 RNG
-%% and would have collisions based on 3DES (which is a black-box algorithm,
-%% i.e., the DES S-boxes used within the cipher were never published).
+%% and would have collisions based on 3DES.
 %% @end
 %%-------------------------------------------------------------------------
 
