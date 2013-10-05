@@ -18,13 +18,13 @@
 %%% @end
 %%%
 %%% BSD LICENSE
-%%% 
+%%%
 %%% Copyright (c) 2011-2013, Michael Truog <mjtruog at gmail dot com>
 %%% All rights reserved.
-%%% 
+%%%
 %%% Redistribution and use in source and binary forms, with or without
 %%% modification, are permitted provided that the following conditions are met:
-%%% 
+%%%
 %%%     * Redistributions of source code must retain the above copyright
 %%%       notice, this list of conditions and the following disclaimer.
 %%%     * Redistributions in binary form must reproduce the above copyright
@@ -37,7 +37,7 @@
 %%%     * The name of the author may not be used to endorse or promote
 %%%       products derived from this software without specific prior
 %%%       written permission
-%%% 
+%%%
 %%% THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
 %%% CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
 %%% INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
@@ -90,6 +90,7 @@
          string_to_uuid/1,
          is_uuid/1,
          increment/1,
+         mac_address/0,
          test/0]).
 
 -record(uuid_state,
@@ -118,7 +119,7 @@
     #uuid_state{}.
 
 new(Pid) when is_pid(Pid) ->
-    new(Pid, erlang).
+    new(Pid, [{timestamp_type, erlang}]).
 
 %%-------------------------------------------------------------------------
 %% @doc
@@ -136,6 +137,24 @@ new(Pid) when is_pid(Pid) ->
 new(Pid, TimestampType)
     when is_pid(Pid), TimestampType =:= erlang;
          is_pid(Pid), TimestampType =:= os ->
+    new(Pid, [{timestamp_type, TimestampType}]);
+new(Pid, Options)
+    when is_pid(Pid), is_list(Options) ->
+    TimestampType =
+        case lists:keyfind(timestamp_type, 1, Options) of
+            {timestamp_type, TimestampType2} ->
+                TimestampType2;
+            false ->
+                erlang
+        end,
+    MacAddress =
+        case lists:keyfind(mac_address, 1, Options) of
+            {mac_address, MacAddress2} ->
+                MacAddress2;
+            false ->
+                mac_address()
+        end,
+
     % make the version 1 UUID specific to the Erlang node and pid
 
     % 48 bits for the first MAC address found is included with the
@@ -144,7 +163,7 @@ new(Pid, TimestampType)
       NodeD06, NodeD07, NodeD08, NodeD09, NodeD10,
       NodeD11, NodeD12, NodeD13, NodeD14, NodeD15,
       NodeD16, NodeD17, NodeD18, NodeD19, NodeD20>> =
-      crypto:hash(sha, erlang:list_to_binary(mac_address() ++
+      crypto:hash(sha, erlang:list_to_binary(MacAddress ++
                                              erlang:atom_to_list(node()))),
     PidBin = erlang:term_to_binary(Pid),
     % 72 bits for the Erlang pid
@@ -446,7 +465,7 @@ get_v4(weak) ->
 %% @doc
 %% ===Get a v4 UUID (using Wichmann-Hill 2006).===
 %% random_wh06_int:uniform/1 repeats every 2.66e36 (2^121) approx.
-%% (see B.A. Wichmann and I.D.Hill, in 
+%% (see B.A. Wichmann and I.D.Hill, in
 %%  'Generating good pseudo-random numbers',
 %%  Computational Statistics and Data Analysis 51 (2006) 1614-1622)
 %% a single random_wh06_int:uniform/1 call can provide a maximum of 124 bits
@@ -471,7 +490,7 @@ get_v4_urandom() ->
 %% @doc
 %% ===Get a v4 UUID (using Wichmann-Hill 1982).===
 %% random:uniform/1 repeats every 2.78e13
-%% (see B.A. Wichmann and I.D.Hill, in 
+%% (see B.A. Wichmann and I.D.Hill, in
 %%  'An efficient and portable pseudo-random number generator',
 %%  Journal of Applied Statistics. AS183. 1982, or Byte March 1987)
 %% a single random:uniform/1 call can provide a maximum of 45 bits
@@ -534,7 +553,7 @@ get_v4_urandom_native() ->
     <<Rand3a:12, Rand3b:8>> = <<Rand3:20>>,
     <<Rand1:27, Rand2:21,
       0:1, 1:1, 0:1, 0:1,  % version 4 bits
-      Rand3a:12, 
+      Rand3a:12,
       1:1, 0:1,            % RFC 4122 variant bits
       Rand3b:8, Rand4:27, Rand5:27>>.
 
@@ -680,7 +699,7 @@ is_v5(_) ->
 -spec uuid_to_list(Value :: <<_:128>>) ->
     iolist().
 
-uuid_to_list(Value) 
+uuid_to_list(Value)
     when is_binary(Value), byte_size(Value) == 16 ->
     <<B1:32/unsigned-integer,
       B2:16/unsigned-integer,
@@ -853,7 +872,7 @@ is_uuid(_) ->
 %% when the system clock changes.  Since the version 1 node id contains the
 %% Erlang PID ID, Serial, and Creation numbers in a (non-destructive)
 %% bitwise-xor operation, the node id is specific to both the Erlang node
-%% and the Erlang node lifetime (the PID Creation is different after a node 
+%% and the Erlang node lifetime (the PID Creation is different after a node
 %% crash). Therefore, it is unclear why this function would be necessary
 %% within this Erlang implementation of v1 UUID generation (if the system
 %% is always running). The only event that seems to require this function's
@@ -878,6 +897,10 @@ increment(#uuid_state{clock_seq = ClockSeq} = State) ->
             NextClockSeq
     end,
     State#uuid_state{clock_seq = NewClockSeq}.
+
+mac_address() ->
+    {ok, Ifs} = inet:getifaddrs(),
+    mac_address(lists:keysort(1, Ifs)).
 
 %%-------------------------------------------------------------------------
 %% @doc
@@ -906,7 +929,7 @@ test() ->
     V1Time1total = erlang:trunc((V1Time1 - 16#01b21dd213814000) / 10),
     V1Time1mega = erlang:trunc(V1Time1total / 1000000000000),
     V1Time1sec = erlang:trunc(V1Time1total / 1000000 - V1Time1mega * 1000000),
-    V1Time1micro = erlang:trunc(V1Time1total - 
+    V1Time1micro = erlang:trunc(V1Time1total -
         (V1Time1mega * 1000000 + V1Time1sec) * 1000000),
     {{2012, 12, 8}, {3, 13, 58}} =
         calendar:now_to_datetime({V1Time1mega, V1Time1sec, V1Time1micro}),
@@ -928,7 +951,7 @@ test() ->
     V1Time2total = erlang:trunc((V1Time2 - 16#01b21dd213814000) / 10),
     V1Time2Amega = erlang:trunc(V1Time2total / 1000000000000),
     V1Time2Asec = erlang:trunc(V1Time2total / 1000000 - V1Time2Amega * 1000000),
-    V1Time2Amicro = erlang:trunc(V1Time2total - 
+    V1Time2Amicro = erlang:trunc(V1Time2total -
         (V1Time2Amega * 1000000 + V1Time2Asec) * 1000000),
     V1Time2B = 1354938160.1998589,
     V1Time2Bmega = erlang:trunc(V1Time2B / 1000000),
@@ -1090,10 +1113,6 @@ hex_to_int(C) when $A =< C, C =< $F ->
     C - $A + 10;
 hex_to_int(C) when $a =< C, C =< $f ->
     C - $a + 10.
-
-mac_address() ->
-    {ok, Ifs} = inet:getifaddrs(),
-    mac_address(lists:keysort(1, Ifs)).
 
 mac_address([]) ->
     [0, 0, 0, 0, 0, 0];
