@@ -131,7 +131,10 @@ new(Pid) when is_pid(Pid) ->
 %% @end
 %%-------------------------------------------------------------------------
 
--spec new(Pid :: pid(), TimestampType :: 'os' | 'erlang') ->
+-spec new(Pid :: pid(),
+          Options :: 'os' | 'erlang' |
+                     list({timestamp_type, 'os' | 'erlang'} |
+                          {mac_address, list(non_neg_integer())})) ->
     #uuid_state{}.
 
 new(Pid, TimestampType)
