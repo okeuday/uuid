@@ -135,25 +135,23 @@ new(Pid) when is_pid(Pid) ->
     #uuid_state{}.
 
 new(Pid, TimestampType)
-    when is_pid(Pid), TimestampType =:= erlang;
-         is_pid(Pid), TimestampType =:= os ->
+    when is_pid(Pid),
+         ((TimestampType =:= erlang) orelse (TimestampType =:= os)) ->
     new(Pid, [{timestamp_type, TimestampType}]);
 new(Pid, Options)
     when is_pid(Pid), is_list(Options) ->
-    TimestampType =
-        case lists:keyfind(timestamp_type, 1, Options) of
-            {timestamp_type, TimestampType2} ->
-                TimestampType2;
-            false ->
-                erlang
-        end,
-    MacAddress =
-        case lists:keyfind(mac_address, 1, Options) of
-            {mac_address, MacAddress2} ->
-                MacAddress2;
-            false ->
-                mac_address()
-        end,
+    TimestampType = case lists:keyfind(timestamp_type, 1, Options) of
+        {timestamp_type, Value1} ->
+            Value1;
+        false ->
+            erlang
+    end,
+    MacAddress = case lists:keyfind(mac_address, 1, Options) of
+        {mac_address, Value2} ->
+            Value2;
+        false ->
+            mac_address()
+    end,
 
     % make the version 1 UUID specific to the Erlang node and pid
 
@@ -165,7 +163,12 @@ new(Pid, Options)
       NodeD16, NodeD17, NodeD18, NodeD19, NodeD20>> =
       crypto:hash(sha, erlang:list_to_binary(MacAddress ++
                                              erlang:atom_to_list(node()))),
-    PidBin = erlang:term_to_binary(Pid),
+    % later, when the pid format changes, handle the different format
+    ExternalTermFormatVersion = 131,
+    PidExtType = 103,
+    <<ExternalTermFormatVersion:8,
+      PidExtType:8,
+      PidBin/binary>> = erlang:term_to_binary(Pid),
     % 72 bits for the Erlang pid
     <<PidID1:8, PidID2:8, PidID3:8, PidID4:8, % ID (Node specific, 15 bits)
       PidSR1:8, PidSR2:8, PidSR3:8, PidSR4:8, % Serial (extra uniqueness)
@@ -898,6 +901,15 @@ increment(#uuid_state{clock_seq = ClockSeq} = State) ->
     end,
     State#uuid_state{clock_seq = NewClockSeq}.
 
+%%-------------------------------------------------------------------------
+%% @doc
+%% ===Provide a usable network interface MAC address.===
+%% @end
+%%-------------------------------------------------------------------------
+
+-spec mac_address() ->
+    list(non_neg_integer()).
+
 mac_address() ->
     {ok, Ifs} = inet:getifaddrs(),
     mac_address(lists:keysort(1, Ifs)).
@@ -977,6 +989,11 @@ test() ->
         uuid:string_to_uuid("7134eede-c23b-11e2-a4a7-38607751fca5"))),
     true = is_number(uuid:get_v1_time(
         uuid:string_to_uuid("717003c0-c23b-11e2-83a4-38607751fca5"))),
+    V1uuid4 = uuid:get_v1(uuid:new(self(), os)),
+    V1uuid4timeB = uuid:get_v1_time(os),
+    V1uuid4timeA = uuid:get_v1_time(V1uuid4),
+    true = (V1uuid4timeA < V1uuid4timeB) and
+           ((V1uuid4timeA + 1000) > V1uuid4timeB),
 
     % version 3 tests
     % $ python
