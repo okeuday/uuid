@@ -15,7 +15,7 @@
    <a href="http://www.ietf.org/rfc/rfc4122.txt" target="_top"><tt>http://www.ietf.org/rfc/rfc4122.txt</tt></a> is the reference for official UUIDs.
 <p>Copyright © 2011-2013 Michael Truog</p>
 
-<p><b>Version:</b> 1.2.5 Sep 17 2013 16:46:38
+<p><b>Version:</b> 1.3.1 Oct 24 2013 13:27:12
   ------------------------------------------------------------------------</p>
 <p><b>Authors:</b> Michael Truog (<a href="mailto:mjtruog [at] gmail (dot) com"><tt>mjtruog [at] gmail (dot) com</tt></a>).</p>
 
@@ -106,6 +106,8 @@ because multiple function calls are necessary)</p>.</td></tr>
   <h4><a name="Is_the_binary_a_v4_UUID?">Is the binary a v4 UUID?</a></h4>.</td></tr>
 <tr><td valign="top"><a href="#is_v5-1">is_v5/1</a></td><td>
   <h4><a name="Is_the_binary_a_v5_UUID?">Is the binary a v5 UUID?</a></h4>.</td></tr>
+<tr><td valign="top"><a href="#mac_address-0">mac_address/0</a></td><td>
+  <h4><a name="Provide_a_usable_network_interface_MAC_address.">Provide a usable network interface MAC address.</a></h4>.</td></tr>
 <tr><td valign="top"><a href="#new-1">new/1</a></td><td>
   <h4><a name="Create_new_UUID_state_for_v1_UUID_generation.">Create new UUID state for v1 UUID generation.</a></h4>.</td></tr>
 <tr><td valign="top"><a href="#new-2">new/2</a></td><td>
@@ -149,21 +151,21 @@ because multiple function calls are necessary)</p>.</td></tr>
 
 <h3 class="function"><a name="get_v3-1">get_v3/1</a></h3>
 <div class="spec">
-<p><tt>get_v3(Data::binary() | iolist()) -&gt; &lt;&lt;_:128&gt;&gt;</tt><br></p>
+<p><tt>get_v3(Data::binary()) -&gt; &lt;&lt;_:128&gt;&gt;</tt><br></p>
 </div><p>
   <h4><a name="Get_a_v3_UUID.">Get a v3 UUID.</a></h4>
 </p>
 
 <h3 class="function"><a name="get_v3-2">get_v3/2</a></h3>
 <div class="spec">
-<p><tt>get_v3(Namespace::dns | url | oid | x500 | binary(), Data::binary() | list()) -&gt; &lt;&lt;_:128&gt;&gt;</tt><br></p>
+<p><tt>get_v3(Namespace::dns | url | oid | x500 | binary(), Data::binary() | iolist()) -&gt; &lt;&lt;_:128&gt;&gt;</tt><br></p>
 </div><p>
   <h4><a name="Get_a_v3_UUID_in_a_particular_namespace.">Get a v3 UUID in a particular namespace.</a></h4>
 </p>
 
 <h3 class="function"><a name="get_v3_compat-1">get_v3_compat/1</a></h3>
 <div class="spec">
-<p><tt>get_v3_compat(Data::binary() | iolist()) -&gt; &lt;&lt;_:128&gt;&gt;</tt><br></p>
+<p><tt>get_v3_compat(Data::binary()) -&gt; &lt;&lt;_:128&gt;&gt;</tt><br></p>
 </div><p>
   <h4><a name="Get_a_compatible_v3_UUID.">Get a compatible v3 UUID.</a></h4>
   Do not use all bits from the checksum so that the UUID matches external
@@ -171,7 +173,7 @@ because multiple function calls are necessary)</p>.</td></tr>
 
 <h3 class="function"><a name="get_v3_compat-2">get_v3_compat/2</a></h3>
 <div class="spec">
-<p><tt>get_v3_compat(Namespace::dns | url | oid | x500 | binary(), Data::binary() | list()) -&gt; &lt;&lt;_:128&gt;&gt;</tt><br></p>
+<p><tt>get_v3_compat(Namespace::dns | url | oid | x500 | binary(), Data::binary() | iolist()) -&gt; &lt;&lt;_:128&gt;&gt;</tt><br></p>
 </div><p>
   <h4><a name="Get_a_compatible_v3_UUID_in_a_particular_namespace.">Get a compatible v3 UUID in a particular namespace.</a></h4>
   Do not use all bits from the checksum so that the UUID matches external
@@ -192,8 +194,7 @@ because multiple function calls are necessary)</p>.</td></tr>
   (<a href="http://eprint.iacr.org/2008/469.pdf" target="_top"><tt>http://eprint.iacr.org/2008/469.pdf</tt></a>).  So, that means "weak" would
   repeat ideally every 1.21e24 and at worst every 2.25e15.
   if OpenSSL was compiled in FIPS mode, it uses ANSI X9.31 RNG
-  and would have collisions based on 3DES (which is a black-box algorithm,
-  i.e., the DES S-boxes used within the cipher were never published).</p>
+  and would have collisions based on 3DES.</p>
 
 <h3 class="function"><a name="get_v4-1">get_v4/1</a></h3>
 <div class="spec">
@@ -255,21 +256,21 @@ R - trunc(R).</p>
 
 <h3 class="function"><a name="get_v5-1">get_v5/1</a></h3>
 <div class="spec">
-<p><tt>get_v5(Data::binary() | iolist()) -&gt; &lt;&lt;_:128&gt;&gt;</tt><br></p>
+<p><tt>get_v5(Data::binary()) -&gt; &lt;&lt;_:128&gt;&gt;</tt><br></p>
 </div><p>
   <h4><a name="Get_a_v5_UUID.">Get a v5 UUID.</a></h4>
 </p>
 
 <h3 class="function"><a name="get_v5-2">get_v5/2</a></h3>
 <div class="spec">
-<p><tt>get_v5(Namespace::dns | url | oid | x500 | binary(), Data::binary() | list()) -&gt; &lt;&lt;_:128&gt;&gt;</tt><br></p>
+<p><tt>get_v5(Namespace::dns | url | oid | x500 | binary(), Data::binary() | iolist()) -&gt; &lt;&lt;_:128&gt;&gt;</tt><br></p>
 </div><p>
   <h4><a name="Get_a_v5_UUID_in_a_particular_namespace.">Get a v5 UUID in a particular namespace.</a></h4>
 </p>
 
 <h3 class="function"><a name="get_v5_compat-1">get_v5_compat/1</a></h3>
 <div class="spec">
-<p><tt>get_v5_compat(Data::binary() | iolist()) -&gt; &lt;&lt;_:128&gt;&gt;</tt><br></p>
+<p><tt>get_v5_compat(Data::binary()) -&gt; &lt;&lt;_:128&gt;&gt;</tt><br></p>
 </div><p>
   <h4><a name="Get_a_compatible_v5_UUID.">Get a compatible v5 UUID.</a></h4>
   Do not use all bits from the checksum so that the UUID matches external
@@ -277,7 +278,7 @@ R - trunc(R).</p>
 
 <h3 class="function"><a name="get_v5_compat-2">get_v5_compat/2</a></h3>
 <div class="spec">
-<p><tt>get_v5_compat(Namespace::dns | url | oid | x500 | binary(), Data::binary() | list()) -&gt; &lt;&lt;_:128&gt;&gt;</tt><br></p>
+<p><tt>get_v5_compat(Namespace::dns | url | oid | x500 | binary(), Data::binary() | iolist()) -&gt; &lt;&lt;_:128&gt;&gt;</tt><br></p>
 </div><p>
   <h4><a name="Get_a_compatible_v5_UUID_in_a_particular_namespace.">Get a compatible v5 UUID in a particular namespace.</a></h4>
   Do not use all bits from the checksum so that the UUID matches external
@@ -340,6 +341,13 @@ R - trunc(R).</p>
   <h4><a name="Is_the_binary_a_v5_UUID?">Is the binary a v5 UUID?</a></h4>
 </p>
 
+<h3 class="function"><a name="mac_address-0">mac_address/0</a></h3>
+<div class="spec">
+<p><tt>mac_address() -&gt; [non_neg_integer()]</tt><br></p>
+</div><p>
+  <h4><a name="Provide_a_usable_network_interface_MAC_address.">Provide a usable network interface MAC address.</a></h4>
+</p>
+
 <h3 class="function"><a name="new-1">new/1</a></h3>
 <div class="spec">
 <p><tt>new(Pid::pid()) -&gt; #uuid_state{}</tt><br></p>
@@ -349,7 +357,7 @@ R - trunc(R).</p>
 
 <h3 class="function"><a name="new-2">new/2</a></h3>
 <div class="spec">
-<p><tt>new(Pid::pid(), TimestampType::os | erlang) -&gt; #uuid_state{}</tt><br></p>
+<p><tt>new(Pid::pid(), Options::os | erlang | [{timestamp_type, os | erlang} | {mac_address, [non_neg_integer()]}]) -&gt; #uuid_state{}</tt><br></p>
 </div><p>
   <h4><a name="Create_new_UUID_state_for_v1_UUID_generation_using_a_specific_type_of_timestamp.">Create new UUID state for v1 UUID generation using a specific type of timestamp.</a></h4>
   The timestamp can either be based on erlang:now/0 with erlang or
@@ -394,6 +402,6 @@ R - trunc(R).</p>
 <hr>
 
 <div class="navbar"><a name="#navbar_bottom"></a><table width="100%" border="0" cellspacing="0" cellpadding="2" summary="navigation bar"><tr><td><a href="overview-summary.html" target="overviewFrame">Overview</a></td><td><a href="http://www.erlang.org/"><img src="erlang.png" align="right" border="0" alt="erlang logo"></a></td></tr></table></div>
-<p><i>Generated by EDoc, Sep 17 2013, 16:46:38.</i></p>
+<p><i>Generated by EDoc, Oct 24 2013, 13:27:12.</i></p>
 </body>
 </html>
