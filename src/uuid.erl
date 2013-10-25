@@ -783,7 +783,7 @@ uuid_to_string(Value, binary_standard) ->
       N17, N18, N19, N20, $-,
       N21, N22, N23, N24, N25, N26, N27, N28, N29, N30, N31, N32>>;
 
-uuid_to_string(Value, binary_nodash) ->
+uuid_to_string(<<Value:128/unsigned-integer>>, binary_nodash) ->
     [N01, N02, N03, N04, N05, N06, N07, N08,
      N09, N10, N11, N12,
      N13, N14, N15, N16,
