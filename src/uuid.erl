@@ -738,18 +738,13 @@ uuid_to_string(Value) ->
                                binary_standard | binary_nodash) ->
     string() | binary().
 
-uuid_to_string(Value, standard) ->
-    [B1, B2, B3, B4, B5] = uuid_to_list(Value),
-    [N01, N02, N03, N04, N05, N06, N07, N08] =
-        int_to_hex_list(B1, 8),
-    [N09, N10, N11, N12] =
-        int_to_hex_list(B2, 4),
-    [N13, N14, N15, N16] =
-        int_to_hex_list(B3, 4),
-    [N17, N18, N19, N20] =
-        int_to_hex_list(B4, 4),
-    [N21, N22, N23, N24, N25, N26, N27, N28, N29, N30, N31, N32] =
-        int_to_hex_list(B5, 12),
+uuid_to_string(<<Value:128/unsigned-integer>>, standard) ->
+    [N01, N02, N03, N04, N05, N06, N07, N08,
+     N09, N10, N11, N12,
+     N13, N14, N15, N16,
+     N17, N18, N19, N20,
+     N21, N22, N23, N24, N25, N26, N27, N28, N29, N30, N31, N32] =
+        int_to_hex_list(Value, 32),
     [N01, N02, N03, N04, N05, N06, N07, N08, $-,
      N09, N10, N11, N12, $-,
      N13, N14, N15, N16, $-,
@@ -765,18 +760,13 @@ uuid_to_string(Value, list_standard) ->
 uuid_to_string(Value, list_nodash) ->
     uuid_to_string(Value, nodash);
 
-uuid_to_string(Value, binary_standard) ->
-    [B1, B2, B3, B4, B5] = uuid_to_list(Value),
-    [N01, N02, N03, N04, N05, N06, N07, N08] =
-        int_to_hex_list(B1, 8),
-    [N09, N10, N11, N12] =
-        int_to_hex_list(B2, 4),
-    [N13, N14, N15, N16] =
-        int_to_hex_list(B3, 4),
-    [N17, N18, N19, N20] =
-        int_to_hex_list(B4, 4),
-    [N21, N22, N23, N24, N25, N26, N27, N28, N29, N30, N31, N32] =
-        int_to_hex_list(B5, 12),
+uuid_to_string(<<Value:128/unsigned-integer>>, binary_standard) ->
+    [N01, N02, N03, N04, N05, N06, N07, N08,
+     N09, N10, N11, N12,
+     N13, N14, N15, N16,
+     N17, N18, N19, N20,
+     N21, N22, N23, N24, N25, N26, N27, N28, N29, N30, N31, N32] =
+        int_to_hex_list(Value, 32),
     <<N01, N02, N03, N04, N05, N06, N07, N08, $-,
       N09, N10, N11, N12, $-,
       N13, N14, N15, N16, $-,
