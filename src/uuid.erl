@@ -792,7 +792,7 @@ uuid_to_string(<<Value:128/unsigned-integer>>, binary_nodash) ->
 %% @end
 %%-------------------------------------------------------------------------
 
--spec string_to_uuid(string()) ->
+-spec string_to_uuid(string() | binary()) ->
     <<_:128>>.
 
 string_to_uuid([N01, N02, N03, N04, N05, N06, N07, N08, $-,
