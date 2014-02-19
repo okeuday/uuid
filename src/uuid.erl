@@ -289,7 +289,7 @@ get_v1_time(Value)
       _:14,
       _:48>> = Value,
     <<Time:60>> = <<TimeHigh:12, TimeMid:16, TimeLow:32>>,
-    erlang:trunc((Time - 16#01b21dd213814000) / 10). % microseconds since epoch
+    ((Time - 16#01b21dd213814000) div 10). % microseconds since epoch
 
 %%-------------------------------------------------------------------------
 %% @doc
