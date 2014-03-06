@@ -19,7 +19,7 @@
 %%%
 %%% BSD LICENSE
 %%%
-%%% Copyright (c) 2011-2013, Michael Truog <mjtruog at gmail dot com>
+%%% Copyright (c) 2011-2014, Michael Truog <mjtruog at gmail dot com>
 %%% All rights reserved.
 %%%
 %%% Redistribution and use in source and binary forms, with or without
@@ -54,8 +54,8 @@
 %%% DAMAGE.
 %%%
 %%% @author Michael Truog <mjtruog [at] gmail (dot) com>
-%%% @copyright 2011-2013 Michael Truog
-%%% @version 1.3.1 {@date} {@time}
+%%% @copyright 2011-2014 Michael Truog
+%%% @version 1.3.2 {@date} {@time}
 %%%------------------------------------------------------------------------
 
 -module(uuid).
@@ -1193,13 +1193,13 @@ mac_address([{_, L} | Rest]) ->
     case lists:keyfind(hwaddr, 1, L) of
         false ->
             mac_address(Rest);
-        {hwaddr, [0, 0, 0, 0, 0, 0]} ->
-            mac_address(Rest);
-        {hwaddr, [_, N2, N3, N4, N5, N6] = MAC}
-            when N2 /= 0, N3 /= 0, N4 /= 0, N5 /= 0, N6 /= 0 ->
-            MAC;
-        {hwaddr, _} ->
-            mac_address(Rest)
+        {hwaddr, MAC} ->
+            case lists:sum(MAC) of
+                0 ->
+                    mac_address(Rest);
+                _ ->
+                    MAC
+            end
     end.
 
 -ifdef(TEST).
