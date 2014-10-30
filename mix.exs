@@ -3,14 +3,15 @@ defmodule Uuid.Mixfile do
 
   def project do
     [app: :uuid,
-     version: "1.3.3",
+     version: "1.4.0-rc.4",
+     language: :erlang,
      description: description,
      package: package,
      deps: deps]
   end
 
   defp deps do
-    [{:quickrand, "~> 1.3.3"}]
+    [{:quickrand, "~> 1.4.0-rc.4"}]
   end
 
   defp description do
@@ -19,7 +20,7 @@ defmodule Uuid.Mixfile do
 
   defp package do
     [name: :uuid_erl,
-     files: ~w(src doc erlang.mk Makefile rebar.config README.markdown),
+     files: ~w(src include doc rebar.config README.markdown),
      contributors: ["Michael Truog"],
      licenses: ["BSD"],
      links: %{"GitHub" => "https://github.com/okeuday/uuid"}]
