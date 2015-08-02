@@ -1,0 +1,19 @@
+language: erlang
+otp_release:
+  - 18.0
+  - 17.5
+  - R16B
+before_script:
+  - rebar get-deps
+script: rebar compile eunit suites=uuid
+after_script:
+  - rebar clean
+branches:
+  only:
+    - master
+notifications:
+  irc:
+    channels:
+      - "chat.freenode.net#cloudi"
+    on_success: change
+    on_failure: always
