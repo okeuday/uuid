@@ -19,7 +19,7 @@
 %%%
 %%% BSD LICENSE
 %%%
-%%% Copyright (c) 2011-2015, Michael Truog <mjtruog at gmail dot com>
+%%% Copyright (c) 2011-2016, Michael Truog <mjtruog at gmail dot com>
 %%% All rights reserved.
 %%%
 %%% Redistribution and use in source and binary forms, with or without
@@ -54,8 +54,8 @@
 %%% DAMAGE.
 %%%
 %%% @author Michael Truog <mjtruog [at] gmail (dot) com>
-%%% @copyright 2011-2015 Michael Truog
-%%% @version 1.5.1 {@date} {@time}
+%%% @copyright 2011-2016 Michael Truog
+%%% @version 1.5.2 {@date} {@time}
 %%%------------------------------------------------------------------------
 
 -module(uuid).
@@ -1146,6 +1146,19 @@ test() ->
     V1uuid4timeA = uuid:get_v1_time(V1uuid4),
     true = (V1uuid4timeA < V1uuid4timeB) and
            ((V1uuid4timeA + 1000) > V1uuid4timeB),
+    V1State0 = uuid:new(self()),
+    {V1uuid5,  V1State1} = uuid:get_v1(V1State0),
+    {V1uuid6,  V1State2} = uuid:get_v1(V1State1),
+    {V1uuid7,  V1State3} = uuid:get_v1(V1State2),
+    {V1uuid8,  V1State4} = uuid:get_v1(V1State3),
+    {V1uuid9,  V1State5} = uuid:get_v1(V1State4),
+    {V1uuid10, V1State6} = uuid:get_v1(V1State5),
+    {V1uuid11, _} = uuid:get_v1(V1State6),
+    V1uuidL0 = [V1uuid5, V1uuid6, V1uuid7, V1uuid8,
+                V1uuid9, V1uuid10, V1uuid11],
+    V1uuidL1 = [V1uuid11, V1uuid9, V1uuid8, V1uuid7,
+                V1uuid6, V1uuid10, V1uuid5],
+    true = V1uuidL0 == lists:usort(V1uuidL1),
 
     % version 3 tests
     % $ python
