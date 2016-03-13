@@ -1335,7 +1335,7 @@ mac_address([{_, L} | Rest]) ->
 
 -ifdef(ERLANG_OTP_VERSION_18_FEATURES).
 pseudo_random(N) ->
-    % period 8.31e34
+    % assuming exsplus for 58 bits, period 8.31e34
     rand:uniform(N).
 -else.
 pseudo_random(N) ->
