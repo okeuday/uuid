@@ -936,10 +936,11 @@ is_uuid(_) ->
 
 %%-------------------------------------------------------------------------
 %% @doc
-%% ===Increment the clock sequence of v1 UUID state or a v1 UUID.===
+%% ===Increment the clock sequence of v1 UUID state or a UUID.===
 %% Call to increment the clock sequence counter after the system clock has
 %% been set backwards (see the RFC).  This is only necessary
-%% if the `os' or `warp' timestamp_type is used.
+%% if the `os' or `warp' timestamp_type is used with a v1 UUID.
+%% The v3, v4 and v5 UUIDs are supported for completeness.
 %% @end
 %%-------------------------------------------------------------------------
 
@@ -965,6 +966,32 @@ increment(<<TimeLow:32, TimeMid:16,
       1:1, 0:1,            % RFC 4122 variant bits
       NewClockSeq:14,
       NodeId:48>>;
+increment(<<Rand1:48,
+            Version:4/unsigned-integer,
+            Rand2:12,
+            1:1, 0:1,            % RFC 4122 variant bits
+            Rand3:62>>)
+    when (Version == 4) orelse (Version == 5) orelse (Version == 3) ->
+    <<Value:16/little-unsigned-integer-unit:8>> = <<Rand1:48,
+                                                    Rand2:12,
+                                                    Rand3:62,
+                                                    0:6>>,
+    NextValue = Value + 1,
+    NewValue = if
+        NextValue == 5316911983139663491615228241121378304 ->
+            1;
+        true ->
+            NextValue
+    end,
+    <<NewRand1:48,
+      NewRand2:12,
+      NewRand3:62,
+      0:6>> = <<NewValue:16/little-unsigned-integer-unit:8>>,
+    <<NewRand1:48,
+      Version:4/unsigned-integer,
+      NewRand2:12,
+      1:1, 0:1,            % RFC 4122 variant bits
+      NewRand3:62>>;
 increment(#uuid_state{clock_seq = ClockSeq} = State) ->
     NextClockSeq = ClockSeq + 1,
     NewClockSeq = if
@@ -1170,6 +1197,7 @@ test() ->
     true = (V4Rand1B /= V4Rand2B),
     true = (V4Rand1C /= V4Rand2C),
     true = (V4Rand1D /= V4Rand2D),
+    true = V4uuid3 /= uuid:increment(V4uuid3),
 
     % version 5 tests
     % $ python
