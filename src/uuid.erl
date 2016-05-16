@@ -541,15 +541,6 @@ is_v3(_) ->
 %% ===Get a v4 UUID (using crypto/openssl).===
 %% crypto:strong_rand_bytes/1 repeats in the same way as
 %% RAND_bytes within OpenSSL.
-%% crypto:rand_bytes/1 repeats in the same way as
-%% RAND_pseudo_bytes within OpenSSL.
-%% if OpenSSL is configured to use the MD PRNG (default) with SHA1
-%% (in openssl/crypto/rand/md_rand.c),
-%% the collisions are between 2^80 and 2^51
-%% ([http://eprint.iacr.org/2008/469.pdf]).  So, that means "weak" would
-%% repeat ideally every 1.21e24 and at worst every 2.25e15.
-%% if OpenSSL was compiled in FIPS mode, it uses ANSI X9.31 RNG
-%% and would have collisions based on 3DES.
 %% @end
 %%-------------------------------------------------------------------------
 
@@ -559,19 +550,11 @@ is_v3(_) ->
 get_v4() ->
     get_v4(strong).
 
--spec get_v4('strong' | 'weak') ->
+-spec get_v4('strong') ->
     uuid().
 
 get_v4(strong) ->
     <<Rand1:48, _:4, Rand2:12, _:2, Rand3:62>> = crypto:strong_rand_bytes(16),
-    <<Rand1:48,
-      0:1, 1:1, 0:1, 0:1,  % version 4 bits
-      Rand2:12,
-      1:1, 0:1,            % RFC 4122 variant bits
-      Rand3:62>>;
-
-get_v4(weak) ->
-    <<Rand1:48, _:4, Rand2:12, _:2, Rand3:62>> = crypto:rand_bytes(16),
     <<Rand1:48,
       0:1, 1:1, 0:1, 0:1,  % version 4 bits
       Rand2:12,
