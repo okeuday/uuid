@@ -10,6 +10,11 @@ defmodule Uuid.Mixfile do
      deps: deps]
   end
 
+  def application do
+    [applications: [
+       :quickrand]]
+  end
+
   defp deps do
     [{:quickrand, "~> 1.5.2-rc1"}]
   end
