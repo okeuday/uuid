@@ -1,9 +1,12 @@
+#-*-Mode:elixir;coding:utf-8;tab-width:2;c-basic-offset:2;indent-tabs-mode:()-*-
+# ex: set ft=elixir fenc=utf-8 sts=2 ts=2 sw=2 et nomod:
+
 defmodule Uuid.Mixfile do
   use Mix.Project
 
   def project do
     [app: :uuid,
-     version: "1.6.0",
+     version: "1.7.0",
      language: :erlang,
      description: description(),
      package: package(),
@@ -16,7 +19,7 @@ defmodule Uuid.Mixfile do
   end
 
   defp deps do
-    [{:quickrand, "~> 1.6.0"}]
+    [{:quickrand, "~> 1.7.0"}]
   end
 
   defp description do
