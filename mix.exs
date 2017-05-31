@@ -30,7 +30,7 @@ defmodule Uuid.Mixfile do
     [name: :uuid_erl,
      files: ~w(src include doc rebar.config README.markdown),
      maintainers: ["Michael Truog"],
-     licenses: ["BSD"],
+     licenses: ["MIT"],
      links: %{"GitHub" => "https://github.com/okeuday/uuid"}]
    end
 end
