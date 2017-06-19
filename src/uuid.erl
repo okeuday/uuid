@@ -1280,8 +1280,7 @@ timestamp_type_erlang() ->
 timestamp(erlang_timestamp) ->
     erlang:system_time(micro_seconds);
 timestamp(os) ->
-    {MegaSeconds, Seconds, MicroSeconds} = os:timestamp(),
-    (MegaSeconds * 1000000 + Seconds) * 1000000 + MicroSeconds;
+    os:system_time(micro_seconds);
 timestamp(warp) ->
     erlang:system_time(micro_seconds).
 
