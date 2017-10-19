@@ -99,7 +99,7 @@
 -ifdef(ERLANG_OTP_VERSION_17).
 -define(TIMESTAMP_ERLANG_NOW, true).
 -else.
--define(ERLANG_OTP_VERSION_18_FEATURES, true).
+-define(ERLANG_OTP_VERSION_20_FEATURES, true).
 -endif.
 -endif.
 
@@ -571,7 +571,7 @@ get_v4(strong) ->
       Rand3:62>>;
 
 get_v4(weak) ->
-    <<Rand1:48, _:4, Rand2:12, _:2, Rand3:62>> = crypto:rand_bytes(16),
+    <<Rand1:48, _:4, Rand2:12, _:2, Rand3:62>> = crypto:strong_rand_bytes(16),
     <<Rand1:48,
       0:1, 1:1, 0:1, 0:1,  % version 4 bits
       Rand2:12,
@@ -1361,7 +1361,7 @@ mac_address([{_, L} | Rest]) ->
             end
     end.
 
--ifdef(ERLANG_OTP_VERSION_18_FEATURES).
+-ifdef(ERLANG_OTP_VERSION_20_FEATURES).
 pseudo_random(N) ->
     % assuming exsplus for 58 bits, period 8.31e34
     rand:uniform(N).
