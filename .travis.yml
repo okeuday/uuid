@@ -7,7 +7,7 @@ otp_release:
   - R16B
 before_script:
   - rebar get-deps
-script: rebar compile eunit suites=uuid
+script: rebar compile eunit suites=uuid_erl
 after_script:
   - rebar clean
 branches:
