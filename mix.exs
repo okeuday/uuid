@@ -5,7 +5,7 @@ defmodule Uuid.Mixfile do
   use Mix.Project
 
   def project do
-    [app: :uuid,
+    [app: :uuid_erl,
      version: "1.7.2",
      language: :erlang,
      description: description(),
