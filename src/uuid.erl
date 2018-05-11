@@ -993,6 +993,7 @@ mac_address() ->
     ok.
 
 test() ->
+    true = uuid:is_uuid(<<0:128>>),
     % version 1 tests
     % uuidgen -t ; date
     % "Fri Dec  7 19:13:58 PST 2012"
