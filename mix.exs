@@ -6,7 +6,7 @@ defmodule Uuid.Mixfile do
 
   def project do
     [app: :uuid,
-     version: "1.7.4",
+     version: "1.7.5",
      language: :erlang,
      erlc_options: [
        :debug_info,
@@ -34,7 +34,7 @@ defmodule Uuid.Mixfile do
   end
 
   defp deps do
-    [{:quickrand, "~> 1.7.4"}]
+    [{:quickrand, "~> 1.7.5"}]
   end
 
   defp description do

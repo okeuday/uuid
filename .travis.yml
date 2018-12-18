@@ -1,6 +1,6 @@
 language: erlang
 otp_release:
-  - 21.0.2
+  - 21.1
   - 20.3
   - 19.3
   - 18.3
@@ -15,8 +15,15 @@ branches:
   only:
     - master
 notifications:
+  email:
+    recipients:
+      - mjtruog@gmail.com
   irc:
     channels:
       - "chat.freenode.net#cloudi"
+    template:
+      - "%{repository_slug} (%{branch} - %{commit}) %{author}: %{commit_message}"
+      - "View Changes %{compare_url}"
+      - "Build #%{build_number}: %{message} (%{build_url})"
     on_success: change
     on_failure: always
