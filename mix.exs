@@ -9,6 +9,7 @@ defmodule Uuid.Mixfile do
      version: "1.7.5",
      language: :erlang,
      erlc_options: [
+       {:d, :erlang.list_to_atom('ERLANG_OTP_VERSION_' ++ :erlang.system_info(:otp_release))},
        :debug_info,
        :warnings_as_errors,
        :strict_validation,
