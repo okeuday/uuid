@@ -1,11 +1,11 @@
 language: erlang
 otp_release:
+  - 22.1
   - 21.3
   - 20.3
   - 19.3
   - 18.3
   - 17.5
-  - R16B
 before_script:
   - rebar get-deps
 script: rebar compile eunit suites=uuid
