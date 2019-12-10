@@ -8,7 +8,9 @@ otp_release:
   - 17.5
 before_script:
   - rebar get-deps
-script: rebar compile eunit suites=uuid
+script:
+  - rebar compile eunit suites=uuid
+  - make app
 after_script:
   - rebar clean
 branches:
