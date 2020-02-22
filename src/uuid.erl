@@ -245,7 +245,12 @@ new(Pid, Options)
     NodeId = <<Node16:16/big-unsigned-integer,
                Pid32:32/big-unsigned-integer>>,
 
-    ClockSeq = pseudo_random(16384) - 1,
+    ClockSeq = if
+        Variant =:= rfc4122 ->
+            pseudo_random(16384) - 1;
+        Variant =:= ordered ->
+            pseudo_random(8192) - 1
+    end,
     TimestampTypeInternal = if
         TimestampType =:= os ->
             os;
@@ -302,26 +307,13 @@ get_v1(#uuid_state{variant = ordered,
     Time = MicroSeconds * 10 + ?GREGORIAN_EPOCH_OFFSET,
     % will be larger than 60 bits after 5236-03-31 21:21:00
     <<TimeHigh:48, TimeLow:12>> = <<Time:60>>,
-    ClockSeqNew = if
-        ClockSeq > 8191 ->
-            ClockSeqNext = ClockSeq - 8191,
-            if
-                ClockSeqNext == 8192 ->
-                    0;
-                ClockSeqNext =< 8191 ->
-                    ClockSeqNext
-            end;
-        true ->
-            ClockSeq
-    end,
     {<<TimeHigh:48,
        0:1, 0:1, 0:1, 1:1,  % version 1 bits
        TimeLow:12,
        1:1, 1:1, 1:1,       % ordered (future definition) variant bits
-       ClockSeqNew:13,
+       ClockSeq:13,
        NodeId/binary>>,
-     State#uuid_state{clock_seq = ClockSeqNew,
-                      timestamp_last = MicroSeconds}}.
+     State#uuid_state{timestamp_last = MicroSeconds}}.
 
 %%-------------------------------------------------------------------------
 %% @doc
@@ -1089,10 +1081,12 @@ increment(<<Rand1:48,
       Rand2New:12,
       1:1, 0:1,            % RFC 4122 variant bits
       Rand3New:62>>;
-increment(#uuid_state{clock_seq = ClockSeq} = State) ->
+increment(#uuid_state{variant = Variant,
+                      clock_seq = ClockSeq} = State) ->
     ClockSeqNext = ClockSeq + 1,
     ClockSeqNew = if
-        ClockSeqNext == 16384 ->
+        (Variant =:= rfc4122) andalso (ClockSeqNext == 16384);
+        (Variant =:= ordered) andalso (ClockSeqNext == 8192) ->
             0;
         true ->
             ClockSeqNext
@@ -1227,6 +1221,20 @@ test() ->
     true = uuid:is_v1(V1uuidOrdered1),
     V1uuidOrdered2 = uuid:increment(V1uuidOrdered1),
     true = uuid:is_v1(V1uuidOrdered2),
+    <<_:48,
+      0:1, 0:1, 0:1, 1:1,  % version 1 bits
+      _:12,
+      1:1, 1:1, 1:1,       % ordered (future definition) variant bits
+      _:13,
+      _:48>> = V1uuidOrdered2,
+    V1OrderedState0 = uuid:new(self(), [{variant, ordered}]),
+    {V1uuidOrdered3, _} = uuid:get_v1(V1OrderedState0),
+    <<_:48,
+      0:1, 0:1, 0:1, 1:1,  % version 1 bits
+      _:12,
+      1:1, 1:1, 1:1,       % ordered (future definition) variant bits
+      _:13,
+      _:48>> = V1uuidOrdered3,
 
     % version 3 tests
     % $ python
