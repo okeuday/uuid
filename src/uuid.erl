@@ -143,7 +143,7 @@
     nonempty_string().
 -type uuid_string_list() ::
     nonempty_string().
--endif
+-endif.
 -type uuid_string_binary() ::
     <<_:256>> | <<_:288>>.
 -type uuid_string() :: uuid_string_list() | uuid_string_binary().
