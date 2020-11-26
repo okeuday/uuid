@@ -6,7 +6,7 @@ defmodule Uuid.Mixfile do
 
   def project do
     [app: :uuid,
-     version: "2.0.0",
+     version: "2.0.1",
      language: :erlang,
      erlc_options: [
        {:d, :erlang.list_to_atom('ERLANG_OTP_VERSION_' ++ :erlang.system_info(:otp_release))},
@@ -35,7 +35,7 @@ defmodule Uuid.Mixfile do
   end
 
   defp deps do
-    [{:quickrand, "~> 2.0.0"}]
+    [{:quickrand, "~> 2.0.1"}]
   end
 
   defp description do
@@ -44,7 +44,7 @@ defmodule Uuid.Mixfile do
 
   defp package do
     [name: :uuid_erl,
-     files: ~w(src include doc rebar.config README.markdown),
+     files: ~w(src include doc rebar.config README.markdown LICENSE),
      maintainers: ["Michael Truog"],
      licenses: ["MIT"],
      links: %{"GitHub" => "https://github.com/okeuday/uuid"}]
