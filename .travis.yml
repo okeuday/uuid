@@ -1,9 +1,9 @@
 language: erlang
 otp_release:
-  - 23.0.4
+  - 23.3.1
   - 22.3.4
   - 21.3.8.1
-  - 20.3.8.5
+  - 20.3.8.22
   - 19.3
   - 18.3
   - 17.5
@@ -23,7 +23,7 @@ notifications:
       - mjtruog@gmail.com
   irc:
     channels:
-      - "chat.freenode.net#cloudi"
+      - "irc.oftc.net#cloudi"
     template:
       - "%{repository_slug} (%{branch} - %{commit}) %{author}: %{commit_message}"
       - "View Changes %{compare_url}"
