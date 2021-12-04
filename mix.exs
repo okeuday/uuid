@@ -6,7 +6,7 @@ defmodule Uuid.Mixfile do
 
   def project do
     [app: :uuid,
-     version: "2.0.3",
+     version: "2.0.4",
      language: :erlang,
      erlc_options: [
        {:d, :erlang.list_to_atom('ERLANG_OTP_VERSION_' ++ :erlang.system_info(:otp_release))},
@@ -35,7 +35,7 @@ defmodule Uuid.Mixfile do
   end
 
   defp deps do
-    [{:quickrand, "~> 2.0.3", app: false}]
+    [{:quickrand, ">= 2.0.4"}]
   end
 
   defp description do
