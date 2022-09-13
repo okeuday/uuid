@@ -19,11 +19,21 @@ Requires `Erlang >= R16B01`
 Usage
 -----
 
-For certain methods in this library you need to initialize the random library `quickrand` before calling. This has to occur in the same Erlang process as the calls to the UUID library.
+Certain `uuid` functions require initializing the Erlang process before
+the function is called.  The initialization ensures the `quickrand` dependency
+is able to provide randomness for the `uuid` module use.
 
-If you use the functions `uuid:new/1`, `uuid:new/2` or `uuid:get_v4_urandom/0`, you must have called the function `quickrand:seed/0` first.
+If you use the functions `uuid:new/1`, `uuid:new/2` or `uuid:get_v4_urandom/0`,
+you should call the function `quickrand:seed/0` or `quickrand:seed/1` first.
 
-For `uuid:get_v4(:cached)` you must have called the function `quickrand_cache.init/0` first.
+If you use the function `uuid:get_v4/1` with a `cached` argument,
+you should call the function `quickrand_cache:init/0` or
+`quickrand_cache:init/1` first.  If you use the function `uuid:get_v4/1` with
+`quickrand_cache` state, you would have called the function
+`quickrand_cache:new/0` or `quickrand_cache:new/1` first.
+Using the `quickrand_cache` `init` function means cached random data is stored
+in the process dictionary and using the `quickrand_cache` `new` function
+(instead of `init`) means cached random data is kept in a state variable.
 
 Build
 -----
