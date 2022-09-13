@@ -16,9 +16,14 @@ methods are provided as specified within the RFC.
 
 Requires `Erlang >= R16B01`
 
-If you use the functions `uuid:new/1`, `uuid:new/2` or `uuid:get_v4_urandom/0`
-in an Erlang process, you must have called the function `quickrand:seed/0`
-first (within the same Erlang process).
+Usage
+-----
+
+For certain methods in this library you need to initialize the random library `quickrand` before calling. This has to occur in the same Erlang process as the calls to the UUID library.
+
+If you use the functions `uuid:new/1`, `uuid:new/2` or `uuid:get_v4_urandom/0`, you must have called the function `quickrand:seed/0` first.
+
+For `uuid:get_v4(:cached)` you must have called the function `quickrand_cache.init/0` first.
 
 Build
 -----
