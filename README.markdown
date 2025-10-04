@@ -3,8 +3,8 @@ Erlang UUID Implementation
 
 [![Build Status](https://app.travis-ci.com/okeuday/uuid.svg?branch=master)](https://app.travis-ci.com/okeuday/uuid)
 
-[http://www.ietf.org/rfc/rfc9562.txt] is the reference for UUIDs
-(replacing [http://www.ietf.org/rfc/rfc4122.txt]).
+http://www.ietf.org/rfc/rfc9562.txt is the reference for UUIDs
+(replacing http://www.ietf.org/rfc/rfc4122.txt).
 
 This implementation provides a version 1 UUID that includes both the Erlang pid
 identifier (ID, Serial, Creation) and the distributed Erlang node name within
